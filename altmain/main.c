@@ -35,6 +35,9 @@
 #include <stdio.h>
 #include <math.h>
 #include "GPS.h"
+#include "stm32f3_discovery_l3gd20.h"
+#include "stm32f3_discovery_lsm303dlhc.h"
+#include "stm32f3_discovery.h "
 /** @addtogroup STM32F3-Discovery_Demo
   * @{
   */
