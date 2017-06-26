@@ -106,7 +106,7 @@ uint8_t c =0;
 int duty_cycle1 = 17;
 int duty_cycle2 = 17;
 int duty_cycle3 = 17;
-int duty_cycle4 = 18;
+int duty_cycle4 = 17;
 uint8_t Gyro_XOffset = 0;
 uint8_t Gyro_YOffset = 0;
 
@@ -203,8 +203,8 @@ int main(void)
 		PWMInput_Config3();
 		pwm_period = slow_init_pwm(700);
 		offset = 6800;
-		Set_Offset(&offset, &IN_CH1, &IN_CH2, &IN_CH4);
-		set_pwm_width(1, pwm_period, duty_cycle1);
+		Set_Offset2(&offset, &IN_CH1, &IN_CH2, &IN_CH4);
+		set_pwm_width(1, pwm_period, 18);
 		set_pwm_width(2, pwm_period, duty_cycle1);
 		set_pwm_width(3, pwm_period, duty_cycle1);
 		set_pwm_width(4, pwm_period, duty_cycle1);
@@ -224,7 +224,7 @@ int main(void)
 			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
 			IN_CH1 = TIM4->CCR2- 12260;
 			//IN_CH1 = IN_CH1 - 12260;
-			IN_CH1 = IN_CH1*4;//8;
+			//IN_CH1 = IN_CH1*3;//8;
 			}
 			//Display_Pulse_Width(IN_CH1);
 			if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
@@ -232,7 +232,7 @@ int main(void)
 			TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
 			IN_CH2 = TIM3->CCR2 - 12110;
 			//IN_CH2 = IN_CH2 - 12110;
-			IN_CH2 = IN_CH2*4;//8;
+			//IN_CH2 = IN_CH2*3;//8;
 			}
 			//Display_Pulse_Width(IN_CH2);
 			if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
@@ -246,12 +246,12 @@ int main(void)
 			{
 			TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
 			IN_CH4 = TIM15->CCR2 - 12250;
-			IN_CH4 = IN_CH4/5;
+			IN_CH4 = IN_CH4/4;
 			}
 			//Display_Pulse_Width(IN_CH4);
 			//USART1_Send(' ');
 			//get_heading();
-			Set_Offset1(&IN_CH3, &IN_CH1, &IN_CH2, &IN_CH4);
+			Set_Offset2(&IN_CH3, &IN_CH2, &IN_CH1, &IN_CH4);
 			//Adjust_Yaw(&IN_CH4);
 
 		    USART1_Send('\r');

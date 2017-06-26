@@ -147,8 +147,8 @@ void Set_Offset2(int* value, int* roll, int* pitch, int* yaw)
 	//chasetheX = *pitch + *roll;
 	//chasetheY = *roll - *pitch;
 	offsetA = *value + *pitch + *roll;//+1;
-	offsetB = *value + *roll - *pitch;
-	offsetC = *value + *pitch + *roll;
+	offsetB = *value - *roll + *pitch;
+	offsetC = *value - *pitch - *roll;
 	offsetD = *value + *roll - *pitch;//+1;
 	offsetA = offsetA + *yaw;
 	offsetB = offsetB - *yaw;
