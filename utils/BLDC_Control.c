@@ -27,6 +27,8 @@ int duty_cycleC;
 int duty_cycleB;
 int duty_cycleA;
 int duty_cycleD;
+int XSum_Of_Gyro;
+int YSum_Of_Gyro;
 int XTotal_Rotation;
 int YTotal_Rotation;
 float AccYanglefloat;
@@ -670,13 +672,13 @@ void TIM2_IRQHandler()
         //Multiplying angular rate(Buffer[n]) by the period gives displacement for that period
         //adding the last displacement to the total returns the gyro's current angular displacement
         //if((Buffer[0] > 1.5) || (Buffer[0] < -3)){
-        XTotal_Rotation = (XTotal_Rotation + Buffer[0]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
+        XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
-        XTotal_Rotation = (XTotal_Rotation*0.98) + (AccXangle*-0.02);
+        XTotal_Rotation = (XSum_Of_Gyro*0.98) + (AccXangle*-0.02);
         //if((Buffer[1] > 1.5) || (Buffer[1] < -3)){
-        YTotal_Rotation = (YTotal_Rotation + Buffer[1]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
+        YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
-        YTotal_Rotation = (YTotal_Rotation*0.98) + (AccYangle*-0.02);
+        YTotal_Rotation = (YSum_Of_Gyro*0.98) + (AccYangle*-0.02);
         //YTotal_Rotation = AccYangle*-1;
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;

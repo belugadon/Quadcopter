@@ -203,7 +203,7 @@ int main(void)
 		PWMInput_Config3();
 		pwm_period = slow_init_pwm(700);
 		offset = 6800;
-		Set_Offset2(&offset, &IN_CH1, &IN_CH2, &IN_CH4);
+		Set_Offset1(&offset, &IN_CH1, &IN_CH2, &IN_CH4);
 		set_pwm_width(1, pwm_period, 18);
 		set_pwm_width(2, pwm_period, duty_cycle1);
 		set_pwm_width(3, pwm_period, duty_cycle1);
@@ -246,12 +246,12 @@ int main(void)
 			{
 			TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
 			IN_CH4 = TIM15->CCR2 - 12250;
-			IN_CH4 = IN_CH4/4;
+			//IN_CH4 = IN_CH4/4;
 			}
 			//Display_Pulse_Width(IN_CH4);
 			//USART1_Send(' ');
 			//get_heading();
-			Set_Offset2(&IN_CH3, &IN_CH2, &IN_CH1, &IN_CH4);
+			Set_Offset1(&IN_CH3, &IN_CH2, &IN_CH1, &IN_CH4);
 			//Adjust_Yaw(&IN_CH4);
 
 		    USART1_Send('\r');
