@@ -239,7 +239,8 @@ int main(void)
 			{
 			TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
 			IN_CH3 = TIM8->CCR2;
-			IN_CH3 = offset + (IN_CH3 - 9400);
+			IN_CH3 = (IN_CH3 - 9400);
+			//IN_CH3 = offset + (IN_CH3 * 1.1);
 			}
 			//Display_Pulse_Width(IN_CH3);//IN_CH3);
 			if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)

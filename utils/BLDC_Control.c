@@ -126,10 +126,10 @@ void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
 {
 	chasetheX = *pitch + *roll;
 	chasetheY = *roll - *pitch;
-	offsetA = *value;//+1;
-	offsetB = *value;
-	offsetC = *value;
-	offsetD = *value;//+1;
+	offsetA = (*value + 7300) * 0.78 ;
+	offsetB = (*value + 7000) * 0.79;
+	offsetC = (*value + 6800) * 1.24;
+	offsetD = (*value + 7000)* 1.17;
 	offsetA = offsetA + *yaw;
 	offsetB = offsetB - *yaw;
 	offsetC = offsetC + *yaw;
