@@ -59,7 +59,7 @@ float interrupt_period_float;
 void schedule_PI_interrupts()
 {
 	//cortexm4f_enable_fpu();
-	interrupt_period_int = (1/(float)interrupt_frequency)*4000;
+	interrupt_period_int = (1/(float)interrupt_frequency)*1000;
 	interrupt_period_float = 1/(float)interrupt_frequency;
 	int clk = 36e6; // 36MHz -> system core clock. This is default on the stm32f3 discovery
 	/*
@@ -126,10 +126,10 @@ void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
 {
 	chasetheX = *pitch + *roll;
 	chasetheY = *roll - *pitch;
-	offsetA = (*value + 7300) * 0.78 ;
-	offsetB = (*value + 7000) * 0.79;
-	offsetC = (*value + 6800) * 1.24;
-	offsetD = (*value + 7000)* 1.17;
+	offsetA = (*value + 7300);// * 0.78;
+	offsetB = (*value + 7000);// * 0.79;
+	offsetC = (*value + 6800);// * 1.24;
+	offsetD = (*value + 7000);//* 1.17;
 	offsetA = offsetA + *yaw;
 	offsetB = offsetB - *yaw;
 	offsetC = offsetC + *yaw;
@@ -674,11 +674,14 @@ void TIM2_IRQHandler()
         //if((Buffer[0] > 1.5) || (Buffer[0] < -3)){
         XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
-        XTotal_Rotation = (XSum_Of_Gyro*0.98) + (AccXangle*-0.02);
+        //XTotal_Rotation = XSum_Of_Gyro/100;
+        XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02))/100;
         //if((Buffer[1] > 1.5) || (Buffer[1] < -3)){
         YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
-        YTotal_Rotation = (YSum_Of_Gyro*0.98) + (AccYangle*-0.02);
+        //YTotal_Rotation = YSum_Of_Gyro/100;
+        YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02))/100;
+        //YMean =
         //YTotal_Rotation = AccYangle*-1;
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;

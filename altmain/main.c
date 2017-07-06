@@ -107,8 +107,8 @@ int duty_cycle1 = 17;
 int duty_cycle2 = 17;
 int duty_cycle3 = 17;
 int duty_cycle4 = 17;
-uint8_t Gyro_XOffset = 0;
-uint8_t Gyro_YOffset = 0;
+float Gyro_XOffset = 0;
+float Gyro_YOffset = 0;
 
 uint32_t calibration_value;
 
@@ -587,8 +587,8 @@ void Calculate_Gyro_Drift()
  * drift of the gyro. The value calculated is subtracted from the read gyro output
  */
 	uint8_t i;
-	uint16_t X_SUM;
-	uint16_t Y_SUM;
+	float X_SUM = 0;
+	float Y_SUM = 0;
 	Gyro_XOffset = 0;
 	Gyro_YOffset = 0;
 
@@ -649,13 +649,13 @@ void Demo_GyroReadAngRate (float* pfData)
     sensitivity=L3G_Sensitivity_2000dps;
     break;
   }
-  //RawData[0] = RawData[0] - Gyro_XOffset;
-  //RawData[1] = RawData[1] - Gyro_YOffset;
   /* divide by sensitivity */
   for(i=0; i<3; i++)
   {
     pfData[i]=(float)RawData[i]/sensitivity;
   }
+  pfData[0] = pfData[0] - Gyro_XOffset;
+  pfData[1] = pfData[1] - Gyro_YOffset;
 /*
   USART1_Send('X');
   USART1_Send(':');
