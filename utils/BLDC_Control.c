@@ -40,8 +40,8 @@ int SUMof_XError = 0;
 int SUMof_YError = 0;
 int XLastError = 0;
 int YLastError = 0;
-int ControlX_Out = 0;
-int ControlY_Out = 0;
+float ControlX_Out = 0;
+float ControlY_Out = 0;
 float KpX =  0.0155;//0.031;//0.08;
 float KiX = 0.0005;//0.0007;
 float KdX= 0.065;//0.089;
@@ -124,12 +124,12 @@ void Set_Offset(int* value, int* roll, int* pitch, int* yaw)
 }
 void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
 {
-	chasetheX = *pitch + *roll;
-	chasetheY = *roll - *pitch;
-	offsetA = (*value + 7300);// * 0.78;
-	offsetB = (*value + 7000);// * 0.79;
-	offsetC = (*value + 6800);// * 1.24;
-	offsetD = (*value + 7000);//* 1.17;
+	chasetheY = (*pitch * 0.1) + (*roll * 0.11);
+	chasetheX = (*roll * 0.11) - (*pitch * 0.1);
+	offsetA = (*value + 6900);//7000);// * 0.78;
+	offsetB = (*value + 6900);//7000);// * 0.79;
+	offsetC = (*value + 6900);// * 1.24;
+	offsetD = (*value + 6900);//* 1.17;
 	offsetA = offsetA + *yaw;
 	offsetB = offsetB - *yaw;
 	offsetC = offsetC + *yaw;
@@ -138,10 +138,10 @@ void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
 	offsetB_High = offsetB + 2000;
 	offsetC_High = offsetC + 2000;
 	offsetD_High = offsetD + 2000;
-	offsetA_Low = offsetA - 1800;
-	offsetB_Low = offsetB - 1800;
-	offsetC_Low = offsetC - 1800;
-	offsetD_Low = offsetD - 1800;
+	offsetA_Low = offsetA - 2000;
+	offsetB_Low = offsetB - 2000;
+	offsetC_Low = offsetC - 2000;
+	offsetD_Low = offsetD - 2000;
 
 }
 void Set_Offset2(int* value, int* roll, int* pitch, int* yaw)
@@ -645,6 +645,7 @@ void TIM2_IRQHandler()
     	int SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         init_pwm();
+        if (offsetA >= 8000){
         Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
         //XSamples[2] = XSamples[1];
@@ -675,12 +676,12 @@ void TIM2_IRQHandler()
         XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
         //XTotal_Rotation = XSum_Of_Gyro/100;
-        XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02))/100;
+        XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02))/10;
         //if((Buffer[1] > 1.5) || (Buffer[1] < -3)){
         YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
         //YTotal_Rotation = YSum_Of_Gyro/100;
-        YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02))/100;
+        YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02))/10;
         //YMean =
         //YTotal_Rotation = AccYangle*-1;
         //the difference between the current displacement and the setpoint is the error and P component
@@ -713,19 +714,24 @@ void TIM2_IRQHandler()
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        ControlX_Out = (KpX*Xerror)+(KiX*SUMof_XError)+(KdX*SlopeofXError);
-        ControlY_Out = (KpY*Yerror)+(KiY*SUMof_YError)+(KdY*SlopeofYError);
+        //ControlX_Out = (KpX*Xerror)+(KiX*SUMof_XError)+(KdX*SlopeofXError);
+        //ControlY_Out = (KpY*Yerror)+(KiY*SUMof_YError)+(KdY*SlopeofYError);
+        ControlX_Out = (0.5 * Xerror)+(0.2 * SUMof_XError)+(0.5 * SlopeofXError);
+        ControlY_Out = (0.5 * Yerror)+(0.2 * SUMof_YError)+(0.5 * SlopeofYError);
+        }
+        else{
+        ControlX_Out = 0;
+        ControlY_Out = 0;
+        }
+        duty_cycleC = ControlX_Out + offsetC;
+        duty_cycleA = 0 - (ControlX_Out) + offsetA;// * 1.1);
+        duty_cycleD = (ControlY_Out) + offsetD;// * 1.6);
+        duty_cycleB = 0 - ControlY_Out + offsetB;
 
-
-        duty_cycleC = ControlX_Out;
-        duty_cycleA = 0 - (ControlX_Out);// * 1.1);
-        duty_cycleD = (ControlY_Out);// * 1.6);
-        duty_cycleB = 0 - ControlY_Out;
-
-        duty_cycleC = duty_cycleC + offsetC;
-        duty_cycleA = duty_cycleA + offsetA;
-        duty_cycleB = duty_cycleB + offsetB;
-        duty_cycleD = duty_cycleD + offsetD;
+        //duty_cycleC = duty_cycleC;
+        //duty_cycleA = duty_cycleA;
+        //duty_cycleB = duty_cycleB;
+        //duty_cycleD = duty_cycleD;
 
         if(PID == ENABLE)
         {

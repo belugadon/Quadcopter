@@ -68,6 +68,10 @@ int IN_CH1 = 0;
 int IN_CH2 = 0;
 int IN_CH3 = 0;
 int IN_CH4 = 0;
+int IN_CH1_OFFSET = 0;
+int IN_CH2_OFFSET = 0;
+int IN_CH3_OFFSET = 0;
+int IN_CH4_OFFSET = 0;
 //uint8_t Xval, Yval = 0x00;
 
 __IO uint8_t DataReady = 0;
@@ -201,19 +205,52 @@ int main(void)
 		*/
 
 		PWMInput_Config3();
-		pwm_period = slow_init_pwm(700);
+		//pwm_period = slow_init_pwm(700);
 		offset = 6800;
-		Set_Offset1(&offset, &IN_CH1, &IN_CH2, &IN_CH4);
-		set_pwm_width(1, pwm_period, 18);
-		set_pwm_width(2, pwm_period, duty_cycle1);
-		set_pwm_width(3, pwm_period, duty_cycle1);
-		set_pwm_width(4, pwm_period, duty_cycle1);
-		while(IN_CH1 == 0)
+		//Set_Offset1(0, &IN_CH1, &IN_CH2, &IN_CH4);
+		//set_pwm_width(1, pwm_period, 18);
+		//set_pwm_width(2, pwm_period, duty_cycle1);
+		//set_pwm_width(3, pwm_period, duty_cycle1);
+		//set_pwm_width(4, pwm_period, duty_cycle1);
+		//while(IN_CH1 == 0)
+		//{
+		//	if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
+		//	{
+		//	TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
+		//	IN_CH1 = TIM4->CCR2;
+		//	}
+		//}
+		Set_Offset1(&IN_CH3, &IN_CH2, &IN_CH1, &IN_CH4);
+		while(IN_CH1_OFFSET == 0)
 		{
 			if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
 			{
 			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
-			IN_CH1 = TIM4->CCR2;
+			IN_CH1_OFFSET = TIM4->CCR2;
+			}
+		}
+		while((IN_CH2_OFFSET == 0) || (IN_CH2_OFFSET >= 15000))
+		{
+			if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
+			{
+			TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
+			IN_CH2_OFFSET = TIM3->CCR2;
+			}
+		}
+		while((IN_CH3_OFFSET == 0) || (IN_CH3_OFFSET >= 20000))
+		{
+			if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
+			{
+			TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
+			IN_CH3_OFFSET = TIM8->CCR2;
+			}
+		}
+		while((IN_CH4_OFFSET == 0) || (IN_CH4_OFFSET >= 20000))
+		{
+			if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
+			{
+			TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
+			IN_CH4_OFFSET = TIM15->CCR2;
 			}
 		}
 		schedule_PI_interrupts();
@@ -222,7 +259,7 @@ int main(void)
 			if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
 			{
 			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
-			IN_CH1 = TIM4->CCR2- 12260;
+			IN_CH1 = TIM4->CCR2 - IN_CH1_OFFSET;
 			//IN_CH1 = IN_CH1 - 12260;
 			//IN_CH1 = IN_CH1*3;//8;
 			}
@@ -230,7 +267,7 @@ int main(void)
 			if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
 			{
 			TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
-			IN_CH2 = TIM3->CCR2 - 12110;
+			IN_CH2 = TIM3->CCR2 - IN_CH2_OFFSET;
 			//IN_CH2 = IN_CH2 - 12110;
 			//IN_CH2 = IN_CH2*3;//8;
 			}
@@ -238,15 +275,15 @@ int main(void)
 			if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
 			{
 			TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-			IN_CH3 = TIM8->CCR2;
-			IN_CH3 = (IN_CH3 - 9400);
-			//IN_CH3 = offset + (IN_CH3 * 1.1);
+			IN_CH3 = TIM8->CCR2;// - IN_CH3_OFFSET;
+			IN_CH3 = (IN_CH3 - 9161);
+			IN_CH3 = IN_CH3 * 2;
 			}
 			//Display_Pulse_Width(IN_CH3);//IN_CH3);
 			if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 			{
 			TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
-			IN_CH4 = TIM15->CCR2 - 12250;
+			IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;//12250;
 			//IN_CH4 = IN_CH4/4;
 			}
 			//Display_Pulse_Width(IN_CH4);
