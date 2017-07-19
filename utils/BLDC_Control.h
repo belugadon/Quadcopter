@@ -8,7 +8,7 @@
 
 void schedule_PI_interrupts();
 void disable_PI_control();
-void Set_Offset(int* value, int* pitch, int* roll, int* yaw);
+void Set_Offset(int* value, float* pitch, float* roll, int* yaw);
 void init_BATT_SENSE();
 void bounds_check();
 void arm_sequence();

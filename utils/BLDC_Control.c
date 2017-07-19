@@ -100,14 +100,18 @@ void disable_PI_control()
 {
 	PID = DISABLE;
 }
-void Set_Offset(int* value, int* roll, int* pitch, int* yaw)
+void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheX = *pitch;
-	chasetheY = *roll;
-	offsetA = *value;//+1;
-	offsetB = *value;
-	offsetC = *value;
-	offsetD = *value;//+1;
+	//chasetheY = (*pitch * 0.1) + (*roll * 0.11);
+	//chasetheX = (*roll * 0.11) - (*pitch * 0.1);
+	//offsetA = (*value + 6900);//7000);// * 0.78;
+	//offsetB = (*value + 6900);//7000);// * 0.79;
+	//offsetC = (*value + 6900);// * 1.24;
+	//offsetD = (*value + 6900);//* 1.17;
+	offsetA = 6900 + ((*value * (1 - *roll)) * (*pitch));
+	offsetB = 6900 + ((*value * (*roll)) * (*pitch));
+	offsetC = 6900 + ((*value * (*roll)) * (1 - *pitch));
+	offsetD = 6900 + ((*value * (1 - *roll)) * (1 - *pitch));
 	offsetA = offsetA + *yaw;
 	offsetB = offsetB - *yaw;
 	offsetC = offsetC + *yaw;
@@ -116,10 +120,10 @@ void Set_Offset(int* value, int* roll, int* pitch, int* yaw)
 	offsetB_High = offsetB + 2000;
 	offsetC_High = offsetC + 2000;
 	offsetD_High = offsetD + 2000;
-	offsetA_Low = offsetA - 1800;
-	offsetB_Low = offsetB - 1800;
-	offsetC_Low = offsetC - 1800;
-	offsetD_Low = offsetD - 1800;
+	offsetA_Low = offsetA - 2000;
+	offsetB_Low = offsetB - 2000;
+	offsetC_Low = offsetC - 2000;
+	offsetD_Low = offsetD - 2000;
 
 }
 void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
