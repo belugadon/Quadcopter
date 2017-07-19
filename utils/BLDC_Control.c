@@ -649,7 +649,7 @@ void TIM2_IRQHandler()
     	int SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         init_pwm();
-        if (offsetA >= 8000){
+        if (offsetA >= 800000){
         Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
         //XSamples[2] = XSamples[1];
