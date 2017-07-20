@@ -223,7 +223,7 @@ int main(void)
 		//	}
 		//}
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
-		while(IN_CH1_OFFSET == 0)
+		while((IN_CH1_OFFSET == 0) || (IN_CH2_OFFSET >= 10000))
 		{
 			if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
 			{
@@ -262,16 +262,16 @@ int main(void)
 			{
 			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
 			IN_CH1 = TIM4->CCR2 - IN_CH1_OFFSET;
-			pitch = (float)IN_CH1/(1 - 3280);
-			pitch = pitch + 1;
+			roll = (float)IN_CH1/(0 - 3280);
+			//roll = roll + 1;
 			}
 			//Display_Pulse_Width(IN_CH1);
 			if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
 			{
 			TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
 			IN_CH2 = TIM3->CCR2 - IN_CH2_OFFSET;
-			roll = (float)IN_CH2/3100;
-			roll = roll + 1;
+			pitch = (float)IN_CH2/3100;
+			//pitch = pitch + 1;
 			}
 			//Display_Pulse_Width(IN_CH2);
 			if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
