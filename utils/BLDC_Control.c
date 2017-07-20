@@ -104,10 +104,10 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
 	//chasetheY = (*pitch * 0.1) + (*roll * 0.11);
 	//chasetheX = (*roll * 0.11) - (*pitch * 0.1);
-	offsetA = 6900 + *value + (*value * (*roll)) + (*value * (0 - *pitch));
-	offsetB = 6900 + *value + (*value * (*roll)) + (*value * (*pitch));
-	offsetC = 6900 + *value + (*value * (0 - *roll)) + (*value * (*pitch));
-	offsetD = 6900 + *value + (*value * (0 - *roll)) + (*value * (0 - *pitch));
+	offsetA = 6900 + *value + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
+	offsetB = 6900 + *value + (*value * (*roll))/2 + (*value * (*pitch))/2;
+	offsetC = 6900 + *value + (*value * (0 - *roll))/2 + (*value * (*pitch))/2;
+	offsetD = 6900 + *value + (*value * (0 - *roll))/2 + (*value * (0 - *pitch))/2;
 	//offsetB = offsetB * ((*roll) + (*pitch)/2);
 	//offsetC = offsetC * ((0 - *roll) + (*pitch)/2);
 	//offsetD = offsetD * ((0 - *roll) + (0 - *pitch)/2);
@@ -115,10 +115,10 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 	//offsetB = 7000 + ((*value * (*roll)) * (*pitch));
 	//offsetC = 7000 + ((*value * (0 - *roll)) * (*pitch));
 	//offsetD = 7000 + ((*value * (0 - *roll)) * (0 - *pitch));
-	offsetA = offsetA + *yaw;
-	offsetB = offsetB - *yaw;
-	offsetC = offsetC + *yaw;
-	offsetD = offsetD - *yaw;
+	offsetA = offsetA + *yaw/2;
+	offsetB = offsetB - *yaw/2;
+	offsetC = offsetC + *yaw/2;
+	offsetD = offsetD - *yaw/2;
 	offsetA_High = offsetA + 2000;
 	offsetB_High = offsetB + 2000;
 	offsetC_High = offsetC + 2000;
