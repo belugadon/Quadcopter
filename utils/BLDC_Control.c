@@ -652,7 +652,7 @@ void TIM2_IRQHandler()
     	int SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         init_pwm();
-        if (offsetA >= 800000){
+        if (offsetA >= 8500){
         Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
         //XSamples[2] = XSamples[1];
@@ -680,15 +680,15 @@ void TIM2_IRQHandler()
         //Multiplying angular rate(Buffer[n]) by the period gives displacement for that period
         //adding the last displacement to the total returns the gyro's current angular displacement
         //if((Buffer[0] > 1.5) || (Buffer[0] < -3)){
-        XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
+        XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*108);//interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
-        //XTotal_Rotation = XSum_Of_Gyro/100;
-        XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02))/10;
+        //XTotal_Rotation = XSum_Of_Gyro;
+        XTotal_Rotation = ((XSum_Of_Gyro*-0.98) + (AccXangle*0.02));///10;
         //if((Buffer[1] > 1.5) || (Buffer[1] < -3)){
-        YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
+        YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*108);//interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
         //}
-        //YTotal_Rotation = YSum_Of_Gyro/100;
-        YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02))/10;
+        //YTotal_Rotation = YSum_Of_Gyro;
+        YTotal_Rotation = ((YSum_Of_Gyro*-0.98) + (AccYangle*0.02));///10;
         //YMean =
         //YTotal_Rotation = AccYangle*-1;
         //the difference between the current displacement and the setpoint is the error and P component
