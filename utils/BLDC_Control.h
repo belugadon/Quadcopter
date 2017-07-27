@@ -20,6 +20,8 @@ int slow_init_pwm(int pwm_freq);
 void set_pwm_width(int channel, int pwm_period, uint32_t duty_cycle);
 void set_pwm_width_norm(int channel, int pwm_period, float duty_cycle);
 float gammaCorrect(int b, int c);
+float kalmanFilterY(float newAngle, float newRate,int dt);
+float kalmanFilterX(float newAngle, float newRate,int dt);
 
 
 #endif

@@ -160,7 +160,7 @@ int main(void)
 	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; // Push-pull
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL; // Setup pull-up resistors
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	Calculate_Gyro_Drift();
+	//Calculate_Gyro_Drift();
 
 	//while(GPIO_ReadInputDataBit(GPIOA, 0) == 0)
 	//{
@@ -255,6 +255,7 @@ int main(void)
 			IN_CH4_OFFSET = TIM15->CCR2;
 			}
 		}
+		Calculate_Gyro_Drift();
 		schedule_PI_interrupts();
 		while(1)
 		{
@@ -637,8 +638,8 @@ void Calculate_Gyro_Drift()
 		X_SUM = X_SUM + Buff[0];
 		Y_SUM = Y_SUM + Buff[1];
 	}
-	Gyro_XOffset = X_SUM/10;
-	Gyro_YOffset = Y_SUM/10;
+	Gyro_XOffset = X_SUM/11;
+	Gyro_YOffset = Y_SUM/11;
 }
 /**
   * @brief  Calculate the angular Data rate Gyroscope.

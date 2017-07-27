@@ -1,4 +1,5 @@
 #include "BLDC_Control.h"
+#include "math.h"
 //#include "float.h"
 //#include "arm_math.h"
 //#include "core_CM4.h"
@@ -29,31 +30,46 @@ int duty_cycleA;
 int duty_cycleD;
 int XSum_Of_Gyro;
 int YSum_Of_Gyro;
-int XTotal_Rotation;
-int YTotal_Rotation;
+float XTotal_Rotation;
+float YTotal_Rotation;
+int Throttle = 0;
 float AccYanglefloat;
-int AccXangle;
-int AccYangle;
-int chasetheX = 0.0;//positional setpoint
-int chasetheY = 0.0;//positional setpoint
-int SUMof_XError = 0;
-int SUMof_YError = 0;
-int XLastError = 0;
-int YLastError = 0;
+float AccXangle;
+float AccYangle;
+float chasetheX = 0.0;//positional setpoint
+float chasetheY = 0.0;//positional setpoint
+float SUMof_XError = 0;
+float SUMof_YError = 0;
+float XLastError = 0;
+float YLastError = 0;
 float ControlX_Out = 0;
 float ControlY_Out = 0;
-float KpX =  0.0155;//0.031;//0.08;
-float KiX = 0.0005;//0.0007;
-float KdX= 0.065;//0.089;
-float KpY = 0.0155;//0.08;
-float KiY = 0.0005;//0.5;
-float KdY= 0.065;
 int pwm_period;
 int ms_pulses2;
 int prescaler2;
 int interrupt_frequency = 45;//150;
 int interrupt_period_int;
 float interrupt_period_float;
+
+float XQ_angle  =  0.001;
+float XQ_bias   =  0.003;
+float XR_measured  =  0.03;
+float YQ_angle  =  0.001;
+float YQ_bias   =  0.003;
+float YR_measured  =  0.03;
+
+float X_angle = 0;
+float X_bias = 0;
+float Y_angle = 0;
+float Y_bias = 0;
+
+float XP_00 = 0, XP_01 = 0, XP_10 = 0, XP_11 = 0;
+float Xdt, Xy, XS;
+float XK_0, XK_1;
+float YP_00 = 0, YP_01 = 0, YP_10 = 0, YP_11 = 0;
+float Ydt, Yy, YS;
+float YK_0, YK_1;
+
 
 //Set up the timer and schedule interruptions
 void schedule_PI_interrupts()
@@ -104,6 +120,7 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
 	//chasetheY = (*pitch * 0.1) + (*roll * 0.11);
 	//chasetheX = (*roll * 0.11) - (*pitch * 0.1);
+	Throttle = *value;
 	offsetA = 6900 + *value + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
 	offsetB = 6900 + *value + (*value * (*roll))/2 + (*value * (*pitch))/2;
 	offsetC = 6900 + *value + (*value * (0 - *roll))/2 + (*value * (*pitch))/2;
@@ -119,14 +136,14 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 	offsetB = offsetB - *yaw/2;
 	offsetC = offsetC + *yaw/2;
 	offsetD = offsetD - *yaw/2;
-	offsetA_High = offsetA + 2000;
-	offsetB_High = offsetB + 2000;
-	offsetC_High = offsetC + 2000;
-	offsetD_High = offsetD + 2000;
-	offsetA_Low = offsetA - 2000;
-	offsetB_Low = offsetB - 2000;
-	offsetC_Low = offsetC - 2000;
-	offsetD_Low = offsetD - 2000;
+	offsetA_High = offsetA + 3000;
+	offsetB_High = offsetB + 3000;
+	offsetC_High = offsetC + 3000;
+	offsetD_High = offsetD + 3000;
+	offsetA_Low = offsetA - 3000;
+	offsetB_Low = offsetB - 3000;
+	offsetC_Low = offsetC - 3000;
+	offsetD_Low = offsetD - 3000;
 
 }
 void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
@@ -642,6 +659,53 @@ Display_DC(int value)
 	USART1_Send(dig1+48);
 }
 
+float kalmanFilterX(float newAngle, float newRate,int dt){
+
+	X_angle += dt * (newRate - X_bias);
+    XP_00 +=  dt * (dt * XP_11 - XP_10 - XP_01) + XQ_angle;
+    XP_01 +=  - dt * XP_11;
+    XP_10 +=  - dt * XP_11;
+    XP_11 +=  + XQ_bias;
+
+    XS = XP_00 + XR_measured;
+    XK_0 = XP_00 / XS;
+    XK_1 = XP_10 / XS;
+
+    Xy = newAngle - X_angle;
+    X_angle +=  XK_0 * Xy;
+    X_bias  +=  XK_1 * Xy;
+
+    XP_00 -= XK_0 * XP_00;
+    XP_01 -= XK_0 * XP_01;
+    XP_10 -= XK_1 * XP_00;
+    XP_11 -= XK_1 * XP_01;
+
+    return X_angle;
+}
+float kalmanFilterY(float newAngle, float newRate,int dt){
+
+	Y_angle += dt * (newRate - Y_bias);
+    YP_00 +=  dt * (dt * YP_11 - YP_10 - YP_01) + YQ_angle;
+    YP_01 +=  - dt * YP_11;
+    YP_10 +=  - dt * YP_11;
+    YP_11 +=  + YQ_bias;
+
+    YS = YP_00 + YR_measured;
+    YK_0 = YP_00 / YS;
+    YK_1 = YP_10 / YS;
+
+    Yy = newAngle - Y_angle;
+    Y_angle +=  YK_0 * Yy;
+    Y_bias  +=  YK_1 * Yy;
+
+    YP_00 -= YK_0 * YP_00;
+    YP_01 -= YK_0 * YP_01;
+    YP_10 -= YK_1 * YP_00;
+    YP_11 -= YK_1 * YP_01;
+
+    return Y_angle;
+}
+
 void TIM2_IRQHandler()
 {
     if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
@@ -652,7 +716,7 @@ void TIM2_IRQHandler()
     	int SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         init_pwm();
-        if (offsetA >= 8500){
+        if (offsetA >= 8000){
         Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
         //XSamples[2] = XSamples[1];
@@ -679,18 +743,15 @@ void TIM2_IRQHandler()
 
         //Multiplying angular rate(Buffer[n]) by the period gives displacement for that period
         //adding the last displacement to the total returns the gyro's current angular displacement
-        //if((Buffer[0] > 1.5) || (Buffer[0] < -3)){
-        XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*108);//interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
-        //}
-        //XTotal_Rotation = XSum_Of_Gyro;
-        XTotal_Rotation = ((XSum_Of_Gyro*-0.98) + (AccXangle*0.02));///10;
-        //if((Buffer[1] > 1.5) || (Buffer[1] < -3)){
-        YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*108);//interrupt_period_int);//0.98*(XTotal_Rotation + Buffer[0]*0.06) + (0.02*AccXangle);
-        //}
-        //YTotal_Rotation = YSum_Of_Gyro;
-        YTotal_Rotation = ((YSum_Of_Gyro*-0.98) + (AccYangle*0.02));///10;
-        //YMean =
-        //YTotal_Rotation = AccYangle*-1;
+        //XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*106);
+        //XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02));///10;
+
+        //YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*106);
+        //YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02));///10;
+
+        XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 106)/10;
+        YTotal_Rotation = kalmanFilterX(AccYangle, Buffer[1], 106)/10;
+
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
@@ -702,43 +763,37 @@ void TIM2_IRQHandler()
         	SUMof_XError = SUMof_XError;
         }
         else {
-        SUMof_XError = SUMof_XError + Xerror;//*interrupt_period_float;
+        SUMof_XError = SUMof_XError + Xerror;
         }
         if (((duty_cycleB >= offsetB_High) || (duty_cycleD >= offsetD_High))|| ((duty_cycleB <= offsetB_Low) || (duty_cycleD <= offsetD_Low)))
         {
         	SUMof_YError = SUMof_YError;
         }
         else {
-        SUMof_YError = SUMof_YError + Yerror;//*interrupt_period_float;
+        SUMof_YError = SUMof_YError + Yerror;
         }
 
         //Derivative(D) Component
-        SlopeofXError = (Xerror - XLastError);//*interrupt_frequency;///interrupt_period_float;
+        SlopeofXError = (Xerror - XLastError);
         XLastError = Xerror;
-        SlopeofYError = (Yerror - YLastError);//*interrupt_frequency;///interrupt_period_float;
+        SlopeofYError = (Yerror - YLastError);
         YLastError = Yerror;
 
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        //ControlX_Out = (KpX*Xerror)+(KiX*SUMof_XError)+(KdX*SlopeofXError);
-        //ControlY_Out = (KpY*Yerror)+(KiY*SUMof_YError)+(KdY*SlopeofYError);
-        ControlX_Out = (0.5 * Xerror)+(0.2 * SUMof_XError)+(0.5 * SlopeofXError);
-        ControlY_Out = (0.5 * Yerror)+(0.2 * SUMof_YError)+(0.5 * SlopeofYError);
+        ControlX_Out = (0.17 * Xerror) + (0.05 * SUMof_XError);
+        ControlY_Out = (0.17 * Yerror) + (0.05 * SUMof_YError);
         }
         else{
         ControlX_Out = 0;
         ControlY_Out = 0;
         }
-        duty_cycleC = ControlX_Out + offsetC;
-        duty_cycleA = 0 - (ControlX_Out) + offsetA;// * 1.1);
-        duty_cycleD = (ControlY_Out) + offsetD;// * 1.6);
-        duty_cycleB = 0 - ControlY_Out + offsetB;
+        duty_cycleC = 0 - (ControlX_Out) + offsetC;
+        duty_cycleA = ControlX_Out + offsetA;// * 1.1);
+        duty_cycleD = 0 - (ControlY_Out) + offsetD;// * 1.6);
+        duty_cycleB = ControlY_Out + offsetB;
 
-        //duty_cycleC = duty_cycleC;
-        //duty_cycleA = duty_cycleA;
-        //duty_cycleB = duty_cycleB;
-        //duty_cycleD = duty_cycleD;
 
         if(PID == ENABLE)
         {
@@ -767,7 +822,7 @@ void TIM2_IRQHandler()
         //USART1_Send(':');
         //USART1_Send(',');
         //Display_Axis(XTotal_Rotation);
-        //USART1_Send(' ');
+        //Display_Axis(Buffer[0]*1000);
         //Display_Axis(chasetheX);
         //USART1_Send(' ');
         //USART1_Send('\n');
@@ -776,6 +831,7 @@ void TIM2_IRQHandler()
         //USART1_Send(':');
         //USART1_Send(' ');
         //Display_Axis(YTotal_Rotation);
+        //Display_Axis(Buffer[1]*1000);
         //USART1_Send(',');
         //Display_Axis(Xerror);
         //USART1_Send(',');
