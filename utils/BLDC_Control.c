@@ -47,28 +47,9 @@ float ControlY_Out = 0;
 int pwm_period;
 int ms_pulses2;
 int prescaler2;
-int interrupt_frequency = 45;//150;
+int interrupt_frequency = 50;//150;
 int interrupt_period_int;
 float interrupt_period_float;
-
-float XQ_angle  =  0.001;
-float XQ_bias   =  0.003;
-float XR_measured  =  0.03;
-float YQ_angle  =  0.001;
-float YQ_bias   =  0.003;
-float YR_measured  =  0.03;
-
-float X_angle = 0;
-float X_bias = 0;
-float Y_angle = 0;
-float Y_bias = 0;
-
-float XP_00 = 0, XP_01 = 0, XP_10 = 0, XP_11 = 0;
-float Xdt, Xy, XS;
-float XK_0, XK_1;
-float YP_00 = 0, YP_01 = 0, YP_10 = 0, YP_11 = 0;
-float Ydt, Yy, YS;
-float YK_0, YK_1;
 
 
 //Set up the timer and schedule interruptions
@@ -118,6 +99,36 @@ void disable_PI_control()
 }
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
+	chasetheY = (*roll + *pitch)*1000;
+	chasetheX = (*roll + (0 - *pitch))*1000;
+	Throttle = *value;
+	offsetA = 6900 + *value;// + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
+	offsetB = 6900 + *value;// + (*value * (*roll))/2 + (*value * (*pitch))/2;
+	offsetC = 6900 + *value;// + (*value * (0 - *roll))/2 + (*value * (*pitch))/2;
+	offsetD = 6900 + *value;// + (*value * (0 - *roll))/2 + (*value * (0 - *pitch))/2;
+	//offsetB = offsetB * ((*roll) + (*pitch)/2);
+	//offsetC = offsetC * ((0 - *roll) + (*pitch)/2);
+	//offsetD = offsetD * ((0 - *roll) + (0 - *pitch)/2);
+	//offsetA = 7000 + ((*value * (*roll)) * (0 - *pitch));
+	//offsetB = 7000 + ((*value * (*roll)) * (*pitch));
+	//offsetC = 7000 + ((*value * (0 - *roll)) * (*pitch));
+	//offsetD = 7000 + ((*value * (0 - *roll)) * (0 - *pitch));
+	offsetA = offsetA + *yaw/2;
+	offsetB = offsetB - *yaw/2;
+	offsetC = offsetC + *yaw/2;
+	offsetD = offsetD - *yaw/2;
+	offsetA_High = offsetA + 2500;
+	offsetB_High = offsetB + 2500;
+	offsetC_High = offsetC + 2500;
+	offsetD_High = offsetD + 2500;
+	offsetA_Low = offsetA - 2500;
+	offsetB_Low = offsetB - 2500;
+	offsetC_Low = offsetC - 2500;
+	offsetD_Low = offsetD - 2500;
+
+}
+void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
+{
 	//chasetheY = (*pitch * 0.1) + (*roll * 0.11);
 	//chasetheX = (*roll * 0.11) - (*pitch * 0.1);
 	Throttle = *value;
@@ -144,28 +155,6 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 	offsetB_Low = offsetB - 3000;
 	offsetC_Low = offsetC - 3000;
 	offsetD_Low = offsetD - 3000;
-
-}
-void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
-{
-	chasetheY = (*pitch * 0.1) + (*roll * 0.11);
-	chasetheX = (*roll * 0.11) - (*pitch * 0.1);
-	offsetA = (*value + 6900);//7000);// * 0.78;
-	offsetB = (*value + 6900);//7000);// * 0.79;
-	offsetC = (*value + 6900);// * 1.24;
-	offsetD = (*value + 6900);//* 1.17;
-	offsetA = offsetA + *yaw;
-	offsetB = offsetB - *yaw;
-	offsetC = offsetC + *yaw;
-	offsetD = offsetD - *yaw;
-	offsetA_High = offsetA + 2000;
-	offsetB_High = offsetB + 2000;
-	offsetC_High = offsetC + 2000;
-	offsetD_High = offsetD + 2000;
-	offsetA_Low = offsetA - 2000;
-	offsetB_Low = offsetB - 2000;
-	offsetC_Low = offsetC - 2000;
-	offsetD_Low = offsetD - 2000;
 
 }
 void Set_Offset2(int* value, int* roll, int* pitch, int* yaw)
@@ -659,52 +648,7 @@ Display_DC(int value)
 	USART1_Send(dig1+48);
 }
 
-float kalmanFilterX(float newAngle, float newRate,int dt){
 
-	X_angle += dt * (newRate - X_bias);
-    XP_00 +=  dt * (dt * XP_11 - XP_10 - XP_01) + XQ_angle;
-    XP_01 +=  - dt * XP_11;
-    XP_10 +=  - dt * XP_11;
-    XP_11 +=  + XQ_bias;
-
-    XS = XP_00 + XR_measured;
-    XK_0 = XP_00 / XS;
-    XK_1 = XP_10 / XS;
-
-    Xy = newAngle - X_angle;
-    X_angle +=  XK_0 * Xy;
-    X_bias  +=  XK_1 * Xy;
-
-    XP_00 -= XK_0 * XP_00;
-    XP_01 -= XK_0 * XP_01;
-    XP_10 -= XK_1 * XP_00;
-    XP_11 -= XK_1 * XP_01;
-
-    return X_angle;
-}
-float kalmanFilterY(float newAngle, float newRate,int dt){
-
-	Y_angle += dt * (newRate - Y_bias);
-    YP_00 +=  dt * (dt * YP_11 - YP_10 - YP_01) + YQ_angle;
-    YP_01 +=  - dt * YP_11;
-    YP_10 +=  - dt * YP_11;
-    YP_11 +=  + YQ_bias;
-
-    YS = YP_00 + YR_measured;
-    YK_0 = YP_00 / YS;
-    YK_1 = YP_10 / YS;
-
-    Yy = newAngle - Y_angle;
-    Y_angle +=  YK_0 * Yy;
-    Y_bias  +=  YK_1 * Yy;
-
-    YP_00 -= YK_0 * YP_00;
-    YP_01 -= YK_0 * YP_01;
-    YP_10 -= YK_1 * YP_00;
-    YP_11 -= YK_1 * YP_01;
-
-    return Y_angle;
-}
 
 void TIM2_IRQHandler()
 {
@@ -718,11 +662,6 @@ void TIM2_IRQHandler()
         init_pwm();
         if (offsetA >= 8000){
         Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
-
-        //XSamples[2] = XSamples[1];
-        //XSamples[3] = XSamples[2];
-        //XSamples[4] = XSamples[3];
-        //XSamples[5] = XSamples[4];
 
         Demo_CompassReadAcc(AccBuffer2);
         //AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*180)/PI;
@@ -745,7 +684,6 @@ void TIM2_IRQHandler()
         //adding the last displacement to the total returns the gyro's current angular displacement
         //XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*106);
         //XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02));///10;
-
         //YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*106);
         //YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02));///10;
 
@@ -770,7 +708,7 @@ void TIM2_IRQHandler()
         	SUMof_YError = SUMof_YError;
         }
         else {
-        SUMof_YError = SUMof_YError + Yerror;
+        	SUMof_YError = SUMof_YError + Yerror;
         }
 
         //Derivative(D) Component
@@ -782,8 +720,8 @@ void TIM2_IRQHandler()
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        ControlX_Out = (0.17 * Xerror) + (0.05 * SUMof_XError);
-        ControlY_Out = (0.17 * Yerror) + (0.05 * SUMof_YError);
+        ControlX_Out = (0.5 * Xerror);// + (0.03 * SUMof_XError) + (0.03 * SlopeofYError);
+        ControlY_Out = (0.5 * Yerror);// + (0.03 * SUMof_YError) + (0.03 * SlopeofYError);
         }
         else{
         ControlX_Out = 0;
@@ -817,27 +755,31 @@ void TIM2_IRQHandler()
         	set_pwm_width(3, pwm_period, duty_cycleA);
 
 
-
-        //USART1_Send('X');
-        //USART1_Send(':');
+/*
+        USART1_Send('X');
+        USART1_Send(':');
         //USART1_Send(',');
-        //Display_Axis(XTotal_Rotation);
+        Display_Axis((XTotal_Rotation*10));
         //Display_Axis(Buffer[0]*1000);
-        //Display_Axis(chasetheX);
-        //USART1_Send(' ');
+        USART1_Send(',');
+        USART1_Send(' ');
+        Display_Axis((chasetheX*10));
+        USART1_Send(',');
+        USART1_Send(' ');
         //USART1_Send('\n');
         //USART1_Send('\r');
-        //USART1_Send('Y');
-        //USART1_Send(':');
+        USART1_Send('Y');
+        USART1_Send(':');
         //USART1_Send(' ');
-        //Display_Axis(YTotal_Rotation);
+        Display_Axis((YTotal_Rotation*10));
         //Display_Axis(Buffer[1]*1000);
+        USART1_Send(',');
+        USART1_Send(' ');
+        Display_Axis((chasetheY*10));
         //USART1_Send(',');
-        //Display_Axis(Xerror);
-        //USART1_Send(',');
-        //USART1_Send('\n');
-        //USART1_Send('\r');
-
+        USART1_Send('\n');
+        USART1_Send('\r');
+*/
 /*
         USART1_Send('A');
         USART1_Send(':');
@@ -861,6 +803,6 @@ void TIM2_IRQHandler()
         //USART1_Send(' ');
         //USART1_Send('\n');
         USART1_Send('\r');
-*/
+        */
     }
 }

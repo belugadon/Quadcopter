@@ -632,14 +632,16 @@ void Calculate_Gyro_Drift()
 	Gyro_XOffset = 0;
 	Gyro_YOffset = 0;
 
-	for (i=0;i<10;i++)
+	for (i=0;i<10;i++){ Demo_GyroReadAngRate(Buff); }
+
+	for (i=0;i<50;i++)
 	{
 		Demo_GyroReadAngRate(Buff);
 		X_SUM = X_SUM + Buff[0];
 		Y_SUM = Y_SUM + Buff[1];
 	}
-	Gyro_XOffset = X_SUM/11;
-	Gyro_YOffset = Y_SUM/11;
+	Gyro_XOffset = X_SUM/51;
+	Gyro_YOffset = Y_SUM/51;
 }
 /**
   * @brief  Calculate the angular Data rate Gyroscope.
