@@ -1,5 +1,6 @@
 #include "BLDC_Control.h"
 #include "math.h"
+#include "KalmanFilter.h"
 //#include "float.h"
 //#include "arm_math.h"
 //#include "core_CM4.h"

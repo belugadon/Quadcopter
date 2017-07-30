@@ -44,7 +44,7 @@
 #include <float.h>
 #include "GPS.h"
 #include "BLDC_Control.h"
-
+#include "KalmanFilter.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
