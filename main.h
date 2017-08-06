@@ -50,8 +50,8 @@
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 void Demo_USB (void);
-void PWMInput_Config2();
 void PWMInput_Config();
+void Calibrate_RX_Inputs();
 void get_heading();
 void Demo_GyroConfig(void);
 void Calculate_Gyro_Drift();

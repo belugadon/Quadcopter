@@ -206,55 +206,11 @@ int main(void)
 	    Display_Heading(HeadingValue);
 		*/
 
-		PWMInput_Config3();
+		PWMInput_Config();
 		//pwm_period = slow_init_pwm(700);
 		offset = 6800;
-		//Set_Offset1(0, &IN_CH1, &IN_CH2, &IN_CH4);
-		//set_pwm_width(1, pwm_period, 18);
-		//set_pwm_width(2, pwm_period, duty_cycle1);
-		//set_pwm_width(3, pwm_period, duty_cycle1);
-		//set_pwm_width(4, pwm_period, duty_cycle1);
-		//while(IN_CH1 == 0)
-		//{
-		//	if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
-		//	{
-		//	TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
-		//	IN_CH1 = TIM4->CCR2;
-		//	}
-		//}
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
-		while((IN_CH1_OFFSET == 0) || (IN_CH2_OFFSET >= 10000))
-		{
-			if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
-			IN_CH1_OFFSET = TIM4->CCR2;
-			}
-		}
-		while((IN_CH2_OFFSET == 0) || (IN_CH2_OFFSET >= 15000))
-		{
-			if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
-			IN_CH2_OFFSET = TIM3->CCR2;
-			}
-		}
-		while((IN_CH3_OFFSET == 0) || (IN_CH3_OFFSET >= 20000))
-		{
-			if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-			IN_CH3_OFFSET = TIM8->CCR2;
-			}
-		}
-		while((IN_CH4_OFFSET == 0) || (IN_CH4_OFFSET >= 20000))
-		{
-			if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
-			IN_CH4_OFFSET = TIM15->CCR2;
-			}
-		}
+		Calibrate_RX_Inputs();
 		Calculate_Gyro_Drift();
 		schedule_PI_interrupts();
 		while(1)
@@ -349,7 +305,7 @@ int main(void)
     //while(1);
 }
 
-void PWMInput_Config3()
+void PWMInput_Config()
 {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
@@ -509,6 +465,68 @@ void PWMInput_Config3()
     TIM_Cmd(TIM3, ENABLE);
     TIM_Cmd(TIM8, ENABLE);
     TIM_Cmd(TIM15, ENABLE);
+}
+
+void Calibrate_RX_Inputs()
+{
+	int Sample = 0;
+	int Sum = 0;
+	int i = 0;
+	for(i=0;i<10;i++){
+	while((Sample == 0) || (Sample >= 15000)){
+		if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
+		{
+		TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
+		Sample = TIM4->CCR2;
+		Sum = Sum + Sample;
+		}
+	}
+	Sample = 0;
+	}
+	IN_CH1_OFFSET = Sum/10;
+	Sum = 0;
+	for(i=0;i<10;i++){
+	while((Sample == 0) || (Sample >= 15000))
+	{
+		if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
+		{
+		TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
+		Sample = TIM3->CCR2;
+		Sum = Sum + Sample;
+		}
+	}
+	Sample = 0;
+	}
+	IN_CH2_OFFSET = Sum/10;
+	Sum = 0;
+	for(i=0;i<10;i++){
+	while((Sample == 0) || (Sample >= 20000))
+	{
+		if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
+		{
+		TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
+		Sample = TIM8->CCR2;
+		Sum = Sum + Sample;
+		}
+	}
+	Sample = 0;
+	}
+	IN_CH3_OFFSET = Sum/10;
+	Sum = 0;
+	for(i=0;i<10;i++){
+	while((Sample == 0) || (Sample >= 20000))
+	{
+		if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
+		{
+		TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
+		Sample = TIM15->CCR2;
+		Sum = Sum + Sample;
+		}
+	}
+	Sample = 0;
+	}
+	IN_CH4_OFFSET = Sum/10;
+	Sum = 0;
 }
 uint8_t get_location()
 {
