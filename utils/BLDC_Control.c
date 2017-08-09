@@ -100,8 +100,8 @@ void disable_PI_control()
 }
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*4500;
-	chasetheX = (*roll + (0 - *pitch))*4500;
+	chasetheY = (*roll + *pitch)*3;
+	chasetheX = (*roll + (0 - *pitch))*3;
 	Throttle = *value;
 	offsetA = 6900 + *value;// + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
 	offsetB = 6900 + *value;// + (*value * (*roll))/2 + (*value * (*pitch))/2;

@@ -215,38 +215,8 @@ int main(void)
 		schedule_PI_interrupts();
 		while(1)
 		{
-			if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
-			IN_CH1 = TIM4->CCR2 - IN_CH1_OFFSET;
-			roll = (float)IN_CH1/(0 - 3280);
-			//roll = roll + 1;
-			}
-			//Display_Pulse_Width(IN_CH1);
-			if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
-			IN_CH2 = TIM3->CCR2 - IN_CH2_OFFSET;
-			pitch = (float)IN_CH2/3100;
-			//pitch = pitch + 1;
-			}
-			//Display_Pulse_Width(IN_CH2);
-			if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-			IN_CH3 = TIM8->CCR2;// - IN_CH3_OFFSET;
-			IN_CH3 = (IN_CH3 - 9161);
-			IN_CH3 = IN_CH3 * 2;
-			}
-			//Display_Pulse_Width(IN_CH3);//IN_CH3);
-			if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
-			{
-			TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
-			IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;//12250;
-			//IN_CH4 = IN_CH4/4;
-			}
-			//Display_Pulse_Width(IN_CH4);
-			//USART1_Send(' ');
+
+			Get_Control_Channels();
 			//get_heading();
 			Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 			//Adjust_Yaw(&IN_CH4);
@@ -527,6 +497,33 @@ void Calibrate_RX_Inputs()
 	}
 	IN_CH4_OFFSET = Sum/10;
 	Sum = 0;
+}
+void Get_Control_Channels()
+{
+	if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
+	{
+	TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
+	IN_CH1 = TIM4->CCR2 - IN_CH1_OFFSET;
+	roll = 0 - IN_CH1;
+	}
+	if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
+	{
+	TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
+	IN_CH2 = TIM3->CCR2 - IN_CH2_OFFSET;
+	pitch = IN_CH2;
+	}
+	if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
+	{
+	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
+	IN_CH3 = TIM8->CCR2 - IN_CH3_OFFSET;
+	//IN_CH3 = (IN_CH3 - 9161);
+	IN_CH3 = IN_CH3 * 2;
+	}
+	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
+	{
+	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
+	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;//12250;
+	}
 }
 uint8_t get_location()
 {
