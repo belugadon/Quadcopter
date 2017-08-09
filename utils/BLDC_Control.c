@@ -89,6 +89,75 @@ void schedule_PI_interrupts()
     NVIC_Init(&nvicStructure);
 
 }
+void Display_Axis(int value)
+{
+	int dig, i;
+	int temp;
+	char message[8];
+	//temp = (uint8_t)temp - temp;
+	if (value < 0)
+	{
+		temp = value*-1;
+		dig = temp %10;
+		temp = temp/10;
+		message[0] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[1] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[2] = dig+48;
+		//dig = temp %10;
+		//temp = temp/10;
+		message[3] = '.';
+		dig = temp %10;
+		temp = temp/10;
+		message[4] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[5] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[6] = dig+48;
+		message[7] = '-';
+		//USART1_Send('-');
+		for(i=8; i != 0; i=i-1)
+		{
+			USART1_Send(message[i-1] );
+		}
+	}
+	else {
+		temp = value;
+		dig = temp %10;
+		temp = temp/10;
+		message[0] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[1] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[2] = dig+48;
+		//dig = temp %10;
+		//temp = temp/10;
+		message[3] = '.';
+		dig = temp %10;
+		temp = temp/10;
+		message[4] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[5] = dig+48;
+		dig = temp %10;
+		temp = temp/10;
+		message[6] = dig+48;
+		for(i=7; i != 0; i=i-1)
+		{
+			USART1_Send(message[i-1] );
+		}
+	}
+	//USART1_Send(0xF8);//degrees
+    //USART1_Send('\n');
+    //USART1_Send('\r');
+}
 void cortexm4f_enable_fpu() {
     /* set CP10 and CP11 Full Access */
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
@@ -126,60 +195,39 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 	offsetB_Low = offsetB - 2500;
 	offsetC_Low = offsetC - 2500;
 	offsetD_Low = offsetD - 2500;
-
 }
-void Set_Offset1(int* value, int* roll, int* pitch, int* yaw)
+void Calculate_Position()
 {
-	//chasetheY = (*pitch * 0.1) + (*roll * 0.11);
-	//chasetheX = (*roll * 0.11) - (*pitch * 0.1);
-	Throttle = *value;
-	offsetA = 6900 + *value + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
-	offsetB = 6900 + *value + (*value * (*roll))/2 + (*value * (*pitch))/2;
-	offsetC = 6900 + *value + (*value * (0 - *roll))/2 + (*value * (*pitch))/2;
-	offsetD = 6900 + *value + (*value * (0 - *roll))/2 + (*value * (0 - *pitch))/2;
-	//offsetB = offsetB * ((*roll) + (*pitch)/2);
-	//offsetC = offsetC * ((0 - *roll) + (*pitch)/2);
-	//offsetD = offsetD * ((0 - *roll) + (0 - *pitch)/2);
-	//offsetA = 7000 + ((*value * (*roll)) * (0 - *pitch));
-	//offsetB = 7000 + ((*value * (*roll)) * (*pitch));
-	//offsetC = 7000 + ((*value * (0 - *roll)) * (*pitch));
-	//offsetD = 7000 + ((*value * (0 - *roll)) * (0 - *pitch));
-	offsetA = offsetA + *yaw/2;
-	offsetB = offsetB - *yaw/2;
-	offsetC = offsetC + *yaw/2;
-	offsetD = offsetD - *yaw/2;
-	offsetA_High = offsetA + 3000;
-	offsetB_High = offsetB + 3000;
-	offsetC_High = offsetC + 3000;
-	offsetD_High = offsetD + 3000;
-	offsetA_Low = offsetA - 3000;
-	offsetB_Low = offsetB - 3000;
-	offsetC_Low = offsetC - 3000;
-	offsetD_Low = offsetD - 3000;
+    Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
-}
-void Set_Offset2(int* value, int* roll, int* pitch, int* yaw)
-{
-	//chasetheX = *pitch + *roll;
-	//chasetheY = *roll - *pitch;
-	offsetA = *value + *pitch + *roll;//+1;
-	offsetB = *value - *roll + *pitch;
-	offsetC = *value - *pitch - *roll;
-	offsetD = *value + *roll - *pitch;//+1;
-	offsetA = offsetA + *yaw;
-	offsetB = offsetB - *yaw;
-	offsetC = offsetC + *yaw;
-	offsetD = offsetD - *yaw;
-	offsetA_High = offsetA + 2000;
-	offsetB_High = offsetB + 2000;
-	offsetC_High = offsetC + 2000;
-	offsetD_High = offsetD + 2000;
-	offsetA_Low = offsetA - 1800;
-	offsetB_Low = offsetB - 1800;
-	offsetC_Low = offsetC - 1800;
-	offsetD_Low = offsetD - 1800;
+    Demo_CompassReadAcc(AccBuffer2);
+    //AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*180)/PI;
+    //AccXangle = ((atan2f((float)AccBuffer2[2],(float)AccBuffer2[0]))*180)/PI;
+    AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
+    //AccXangle = ((atan2f((float)AccBuffer2[2],(float)AccBuffer2[0]))*RadToDeg);//*180)/PI;
+    AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
 
+    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/10;
+    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 59)/10;
+/*    USART1_Send('X');
+    USART1_Send(':');
+    //USART1_Send(',');
+    Display_Axis((XTotal_Rotation*10));
+    //Display_Axis(Buffer[0]*1000);
+    USART1_Send(',');
+    USART1_Send(' ');
+    //USART1_Send('\n');
+    //USART1_Send('\r');
+    USART1_Send('Y');
+    USART1_Send(':');
+    //USART1_Send(' ');
+    Display_Axis((YTotal_Rotation*10));
+    //Display_Axis(Buffer[1]*1000);
+    //USART1_Send(',');
+    USART1_Send('\n');
+    USART1_Send('\r');*/
 }
+
 
 void Adjust_Yaw(int* value)
 {
@@ -548,75 +596,7 @@ float gammaCorrect(int b, int c)
 	double f = ((double)b/(float)c);
 	return f*f*f*f*f; // gamma = 5
 }
-void Display_Axis(int value)
-{
-	int dig, i;
-	int temp;
-	char message[8];
-	//temp = (uint8_t)temp - temp;
-	if (value < 0)
-	{
-		temp = value*-1;
-		dig = temp %10;
-		temp = temp/10;
-		message[0] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[1] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[2] = dig+48;
-		//dig = temp %10;
-		//temp = temp/10;
-		message[3] = '.';
-		dig = temp %10;
-		temp = temp/10;
-		message[4] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[5] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[6] = dig+48;
-		message[7] = '-';
-		//USART1_Send('-');
-		for(i=8; i != 0; i=i-1)
-		{
-			USART1_Send(message[i-1] );
-		}
-	}
-	else {
-		temp = value;
-		dig = temp %10;
-		temp = temp/10;
-		message[0] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[1] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[2] = dig+48;
-		//dig = temp %10;
-		//temp = temp/10;
-		message[3] = '.';
-		dig = temp %10;
-		temp = temp/10;
-		message[4] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[5] = dig+48;
-		dig = temp %10;
-		temp = temp/10;
-		message[6] = dig+48;
-		for(i=7; i != 0; i=i-1)
-		{
-			USART1_Send(message[i-1] );
-		}
-	}
-	//USART1_Send(0xF8);//degrees
-    //USART1_Send('\n');
-    //USART1_Send('\r');
-}
+
 void Decrease_Angular_Position(uint8_t value)
 {
 	if (value == 'x')
@@ -661,35 +641,8 @@ void TIM2_IRQHandler()
     	float SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         init_pwm();
+
         if (offsetA >= 8000){
-        Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
-
-        Demo_CompassReadAcc(AccBuffer2);
-        //AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*180)/PI;
-        //AccXangle = ((atan2f((float)AccBuffer2[2],(float)AccBuffer2[0]))*180)/PI;
-        AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
-        //AccXangle = ((atan2f((float)AccBuffer2[2],(float)AccBuffer2[0]))*RadToDeg);//*180)/PI;
-        AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
-
-        /*
-         * The following lines of code create the control components. The respective axis' angular rate(Buffer[n])
-         * is multiplied by the time since the containing interrupt was last called(in seconds(1/interrupt_frequency)).
-         * angular rate multiplied by time passed gives us the amount of displacement(in degrees) that took place
-         * over that period. Summing each periods individual displacement gives the total(current) angular
-         * displacement. The difference between the current displacement and the setpoint(chasetheN) gives us the
-         *  N axis error and P component of the algorithm. A summation of the P component over time is equivalent,
-         *  in this context, to the integral of the error and is used as the I component.
-        */
-
-        //Multiplying angular rate(Buffer[n]) by the period gives displacement for that period
-        //adding the last displacement to the total returns the gyro's current angular displacement
-        //XSum_Of_Gyro = (XSum_Of_Gyro + Buffer[0]*106);
-        //XTotal_Rotation = ((XSum_Of_Gyro*0.98) + (AccXangle*-0.02));///10;
-        //YSum_Of_Gyro = (YSum_Of_Gyro + Buffer[1]*106);
-        //YTotal_Rotation = ((YSum_Of_Gyro*0.98) + (AccYangle*-0.02));///10;
-
-        XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 106)/10;
-        YTotal_Rotation = kalmanFilterX(AccYangle, Buffer[1], 106)/10;
 
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
@@ -754,32 +707,6 @@ void TIM2_IRQHandler()
         	//Display_DC(duty_cycleA);
         	//USART1_Send(' ');
         	set_pwm_width(3, pwm_period, duty_cycleA);
-
-
-
-        USART1_Send('X');
-        USART1_Send(':');
-        //USART1_Send(',');
-        Display_Axis((XTotal_Rotation*10));
-        //Display_Axis(Buffer[0]*1000);
-        USART1_Send(',');
-        USART1_Send(' ');
-        Display_Axis((chasetheX*10));
-        USART1_Send(',');
-        USART1_Send(' ');
-        //USART1_Send('\n');
-        //USART1_Send('\r');
-        USART1_Send('Y');
-        USART1_Send(':');
-        //USART1_Send(' ');
-        Display_Axis((YTotal_Rotation*10));
-        //Display_Axis(Buffer[1]*1000);
-        USART1_Send(',');
-        USART1_Send(' ');
-        Display_Axis((chasetheY*10));
-        //USART1_Send(',');
-        USART1_Send('\n');
-        USART1_Send('\r');
 
 /*
         USART1_Send('A');

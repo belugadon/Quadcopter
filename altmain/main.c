@@ -220,8 +220,8 @@ int main(void)
 			//get_heading();
 			Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 			//Adjust_Yaw(&IN_CH4);
-
-		    USART1_Send('\r');
+	        Calculate_Position();
+		    //USART1_Send('\r');
 		}
 		while(1)
 		{

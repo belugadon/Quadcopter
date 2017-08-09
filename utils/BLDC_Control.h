@@ -22,6 +22,7 @@ void set_pwm_width_norm(int channel, int pwm_period, float duty_cycle);
 float gammaCorrect(int b, int c);
 float kalmanFilterY(float newAngle, float newRate,int dt);
 float kalmanFilterX(float newAngle, float newRate,int dt);
+void Calculate_Position();
 
 
 #endif
