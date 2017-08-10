@@ -169,8 +169,8 @@ void disable_PI_control()
 }
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*3;
-	chasetheX = (*roll + (0 - *pitch))*3;
+	chasetheY = (*roll + *pitch)*15;
+	chasetheX = (*roll + (0 - *pitch))*15;
 	Throttle = *value;
 	offsetA = 6900 + *value;// + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
 	offsetB = 6900 + *value;// + (*value * (*roll))/2 + (*value * (*pitch))/2;
@@ -674,8 +674,8 @@ void TIM2_IRQHandler()
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        ControlX_Out = (0.025 * Xerror) + (0.028 * SUMof_XError);// + (0.03 * SlopeofYError);
-        ControlY_Out = (0.025 * Yerror) + (0.028 * SUMof_YError);// + (0.03 * SlopeofYError);
+        ControlX_Out = (0.02 * Xerror) + (0.025 * SUMof_XError);// + (0.03 * SlopeofYError);
+        ControlY_Out = (0.02 * Yerror) + (0.025 * SUMof_YError);// + (0.03 * SlopeofYError);
         }
         else{
         ControlX_Out = 0;

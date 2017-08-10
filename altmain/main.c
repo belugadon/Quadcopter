@@ -207,7 +207,6 @@ int main(void)
 		*/
 
 		PWMInput_Config();
-		//pwm_period = slow_init_pwm(700);
 		offset = 6800;
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 		Calibrate_RX_Inputs();
@@ -515,8 +514,8 @@ void Get_Control_Channels()
 	if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-	IN_CH3 = TIM8->CCR2 - IN_CH3_OFFSET;
-	//IN_CH3 = (IN_CH3 - 9161);
+	IN_CH3 = TIM8->CCR2;// - IN_CH3_OFFSET;
+	IN_CH3 = (IN_CH3 - 9161);
 	IN_CH3 = IN_CH3 * 2;
 	}
 	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
