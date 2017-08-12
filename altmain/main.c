@@ -74,7 +74,6 @@ int IN_CH1_OFFSET = 0;
 int IN_CH2_OFFSET = 0;
 int IN_CH3_OFFSET = 0;
 int IN_CH4_OFFSET = 0;
-//uint8_t Xval, Yval = 0x00;
 
 __IO uint8_t DataReady = 0;
 __IO uint8_t PrevXferComplete = 1;
@@ -82,41 +81,16 @@ __IO uint32_t USBConnectTimeOut = 100;
 
 float fNormAcc,fSinRoll,fCosRoll,fSinPitch,fCosPitch = 0.0f, RollAng = 0.0f, PitchAng = 0.0f;
 float fTiltedX,fTiltedY = 0.0f;
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
 
-
+uint8_t rx;
+float Gyro_XOffset = 0;
+float Gyro_YOffset = 0;
 
 /**
   * @brief  Main program.
   * @param  None 
   * @retval None
   */
-
-//GPS fix data;
-uint16_t altitude;
-uint16_t Long_Deg;
-float Long_Min;
-double dec_long;
-uint16_t Lat_Deg;
-float Lat_Min;
-double dec_lat;
-uint8_t fix_state = 2;
-uint8_t USART3_rx;
-uint8_t *NEMA_String[70];
-uint8_t string_pointer=0;
-uint8_t power = 0;
-uint8_t tx;
-uint8_t rx;
-uint8_t c =0;
-int duty_cycle1 = 17;
-int duty_cycle2 = 17;
-int duty_cycle3 = 17;
-int duty_cycle4 = 17;
-float Gyro_XOffset = 0;
-float Gyro_YOffset = 0;
-
-uint32_t calibration_value;
 
 int main(void)
 {
@@ -140,138 +114,23 @@ int main(void)
     /* Demo Gyroscope */
     Demo_GyroConfig();
     Demo_CompassConfig();
-
     init_pwm_gpio();
-    //init_BATT_SENSE();
     int pwm_period = init_pwm(300);
-	__IO uint32_t temperature;
-	__IO uint32_t baro;
+	PWMInput_Config();
+	Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
+	Calibrate_RX_Inputs();
+	Calculate_Gyro_Drift();
+	schedule_PI_interrupts();
+	while(1)
+	{
 
-	//char char_1, char_2, char_3, char_4;
-	//char banner1[] = {'\n', '\n', '\r','T', 'e', 'm', 'p', 'e', 'r', 'a', 't', 'u', 'r', 'e', ':', '\n', '\r'};
-	//char banner2[] = {'\n', '\r','A', 'i', 'r', ' ', 'P', 'r', 'e', 's', 's', 'u', 'r', 'e', ':', '\n', '\r'};;
-	//uint8_t len;
-
-	GPIO_InitTypeDef GPIO_InitStructure;
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN; // Input
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // GPIO speed - has nothing to do with the timer timing
-	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; // Push-pull
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL; // Setup pull-up resistors
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	//Calculate_Gyro_Drift();
-
-	//while(GPIO_ReadInputDataBit(GPIOA, 0) == 0)
-	//{
-
-	//}
-		/*
-		while(fix_state != '4')
-		{
-		fix_state = get_location();
-		//TX_GPS();
-		}
-		USART1_Send(fix_state);
-		USART1_Send('\n');
-		USART1_Send('\r');
-		Display_Altitude(altitude);
-		dec_long = Display_Longitude(Long_Deg, Long_Min);
-		dec_lat = Display_Longitude(Lat_Deg, Lat_Min);
-		*/
-		/*
-		DataReady = 0x00;
-	    Demo_CompassConfig();
-
-	    // Wait for data ready
-	    while(DataReady !=0x05)
-	    {}
-	    DataReady = 0x00;
-	    Demo_CompassReadMag(MagBuffer);
-	    Demo_CompassReadAcc(AccBuffer);
-
-	    for(i=0;i<3;i++)
-	        AccBuffer[i] /= 100.0f;
-
-	      fNormAcc = sqrt((AccBuffer[0]*AccBuffer[0])+(AccBuffer[1]*AccBuffer[1])+(AccBuffer[2]*AccBuffer[2]));
-
-	      fSinRoll = -AccBuffer[1]/fNormAcc;
-	      fCosRoll = sqrt(1.0-(fSinRoll * fSinRoll));
-	      fSinPitch = AccBuffer[0]/fNormAcc;
-	      fCosPitch = sqrt(1.0-(fSinPitch * fSinPitch));
-
-		fTiltedX = MagBuffer[0]*fCosPitch+MagBuffer[2]*fSinPitch;
-	    fTiltedY = MagBuffer[0]*fSinRoll*fSinPitch+MagBuffer[1]*fCosRoll-MagBuffer[1]*fSinRoll*fCosPitch;
-	    HeadingValue = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*180)/PI;
-	    Display_Heading(HeadingValue);
-		*/
-
-		PWMInput_Config();
-		offset = 6800;
+		Get_Control_Channels();
+		//get_heading();
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
-		Calibrate_RX_Inputs();
-		Calculate_Gyro_Drift();
-		schedule_PI_interrupts();
-		while(1)
-		{
-
-			Get_Control_Channels();
-			//get_heading();
-			Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
-			//Adjust_Yaw(&IN_CH4);
-	        Calculate_Position();
-		    //USART1_Send('\r');
-		}
-		while(1)
-		{
-			int timedelay1 = 10000;
-			Set_Offset(&offset);
-			//Timing_Delay(10000000000000000000);
-			while(timedelay1 >= 0)
-			{
-				timedelay1--;
-			}
-		}
-
-		while(1)
-		{
-		for(offset=7; offset <= 11;offset++)
-		{
-			int timedelay1 = 1000000;
-			Set_Offset(&offset);
-			//Timing_Delay(10000000000000000000);
-			while(timedelay1 >= 0)
-			{
-				timedelay1--;
-			}
-		}
-		//balance();
-	    //for(i=0; i<sizeof(banner1);i++){USART1_Send(banner1[i]);}
-		//temperature = Get_Temperature();
-		//Display_Temperature(temperature);
-		}
-	    //for(i=0; i<sizeof(banner2);i++){USART1_Send(banner2[i]);}
-	    //baro = Get_Baro();
-	    //Display_Pressure(baro);
-
-	    //altitude = Calc_altitude(1013000000, baro, temperature);
-	    //USART1_Send('\r');
-		//while((USART3->ISR & USART_FLAG_RXNE) == (uint16_t)RESET);
-		//USART2_rx = USART_ReceiveData(USART3);
-		//USART1_Send(USART2_rx);
-
-    // Config the PWM freq to 200Hz
-
-		duty_cycle1 = 5;
-		duty_cycle2 = 5;
-		duty_cycle3 = 5;
-		duty_cycle4 = 5;
-
-    set_pwm_width(1, pwm_period, duty_cycle1);
-    set_pwm_width(2, pwm_period, duty_cycle2);
-    set_pwm_width(3, pwm_period, duty_cycle3);
-    set_pwm_width(4, pwm_period, duty_cycle4);
-    //while(1);
+		//Adjust_Yaw(&IN_CH4);
+	    Calculate_Position();
+		//USART1_Send('\r');
+	}
 }
 
 void PWMInput_Config()
@@ -524,33 +383,7 @@ void Get_Control_Channels()
 	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;//12250;
 	}
 }
-uint8_t get_location()
-{
-	uint8_t head_state = 1;
-	//while(fix_state != '0')
-	//{
-	for(string_pointer=0; string_pointer<=69; string_pointer++)
-	{
-		NEMA_String[string_pointer]=0;
-	}
-	string_pointer=0;
-	//GPIO_Configuration2();
-	USART3_Configuration();
-	while((USART3_rx != '\r') && (USART3_rx != '\n'));
-//	USART1_Send('X');
-	fix_state = parse_GPGGA(NEMA_String, &altitude, &Long_Deg, &Long_Min, &Lat_Deg, &Lat_Min);
-	//if (fix_state=='3')
-	//{
-		//USART1_Send(fix_state);
-		USART1_Send('\r');
-		USART1_Send('\n');
-	//}
-	if(Long_Deg == 0)
-	{
-		fix_state == '5';
-	}
-	return fix_state;
-}
+
 void get_heading()
 {
 	uint8_t i;
@@ -578,16 +411,6 @@ void get_heading()
     fTiltedY = MagBuffer[0]*fSinRoll*fSinPitch+MagBuffer[1]*fCosRoll-MagBuffer[1]*fSinRoll*fCosPitch;
     HeadingValue = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*RadToDeg);//*180)/PI;
     Display_Heading(HeadingValue);
-}
-void TX_GPS()
-{
-	for(string_pointer=0; string_pointer<=69; string_pointer++)
-	{
-		NEMA_String[string_pointer]=0;
-	}
-	string_pointer=0;
-	USART3_Configuration();
-	while((USART3_rx != '\r') && (USART3_rx != '\n'));
 }
 
 /**
@@ -631,31 +454,6 @@ void Demo_GyroConfig(void)
   L3GD20_FilterConfig(&L3GD20_FilterStructure) ;
   
   L3GD20_FilterCmd(L3GD20_HIGHPASSFILTER_ENABLE);
-}
-
-void Calculate_Gyro_Drift()
-{
-/*
- * This function repeatedly samples the gyro's output during an assumed period of inactivity.
- * these samples are summed and divided by the total number of samples to give the average
- * drift of the gyro. The value calculated is subtracted from the read gyro output
- */
-	uint8_t i;
-	float X_SUM = 0;
-	float Y_SUM = 0;
-	Gyro_XOffset = 0;
-	Gyro_YOffset = 0;
-
-	for (i=0;i<10;i++){ Demo_GyroReadAngRate(Buff); }
-
-	for (i=0;i<50;i++)
-	{
-		Demo_GyroReadAngRate(Buff);
-		X_SUM = X_SUM + Buff[0];
-		Y_SUM = Y_SUM + Buff[1];
-	}
-	Gyro_XOffset = X_SUM/51;
-	Gyro_YOffset = Y_SUM/51;
 }
 /**
   * @brief  Calculate the angular Data rate Gyroscope.
@@ -712,26 +510,33 @@ void Demo_GyroReadAngRate (float* pfData)
   }
   pfData[0] = pfData[0] - Gyro_XOffset;
   pfData[1] = pfData[1] - Gyro_YOffset;
-/*
-  USART1_Send('X');
-  USART1_Send(':');
-  USART1_Send(' ');
-  Display_Axis(pfData[0]);
-  USART1_Send(' ');
-  USART1_Send('Y');
-  USART1_Send(':');
-  USART1_Send(' ');
-  Display_Axis(pfData[1]);
-  USART1_Send(' ');
-  USART1_Send('Z');
-  USART1_Send(':');
-  USART1_Send(' ');
-  Display_Axis(pfData[2]);
-  USART1_Send(' ');
-  USART1_Send('\r');
-  USART1_Send('\n');
-*/
 }
+
+void Calculate_Gyro_Drift()
+{
+/*
+ * This function repeatedly samples the gyro's output during an assumed period of inactivity.
+ * these samples are summed and divided by the total number of samples to give the average
+ * drift of the gyro. The value calculated is subtracted from the read gyro output
+ */
+	uint8_t i;
+	float X_SUM = 0;
+	float Y_SUM = 0;
+	Gyro_XOffset = 0;
+	Gyro_YOffset = 0;
+
+	for (i=0;i<10;i++){ Demo_GyroReadAngRate(Buff); }
+
+	for (i=0;i<50;i++)
+	{
+		Demo_GyroReadAngRate(Buff);
+		X_SUM = X_SUM + Buff[0];
+		Y_SUM = Y_SUM + Buff[1];
+	}
+	Gyro_XOffset = X_SUM/51;
+	Gyro_YOffset = Y_SUM/51;
+}
+
 /**
   * @brief  Configure the Mems to compass application.
   * @param  None
@@ -1008,15 +813,6 @@ void USART1_Configuration(void)
   USART_InitTypeDef USART_InitStructure;
   NVIC_InitTypeDef NVIC_InitStructure;
 
-//   USART resources configuration (Clock, GPIO pins and USART registers) ----
-//   USART configured as follow:
-//        - BaudRate = 115200 baud
-//        - Word Length = 8 Bits
-//        - One Stop Bit
-//        - No parity
-//        - Hardware flow control disabled (RTS and CTS signals)
-//        - Receive and transmit enabled
-
   USART_InitStructure.USART_BaudRate = 9600;
   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits = USART_StopBits_1;
@@ -1067,144 +863,6 @@ void USART1_Send(char character)
     USART_SendData(USART1, character);
 }
 
-
-void Config_ADC(uint16_t GPIO_PIN, uint16_t ADC_Channel)
-{
-	uint32_t timedelay = 100;
-    ADC_InitTypeDef       ADC_InitStructure;
-    ADC_CommonInitTypeDef ADC_CommonInitStructure;
-    GPIO_InitTypeDef      GPIO_InitStructure;
-
-    // Configure the ADC clock
-    RCC_ADCCLKConfig( RCC_ADC12PLLCLK_Div2 );
-
-    // Enable ADC1 clock
-    RCC_AHBPeriphClockCmd( RCC_AHBPeriph_ADC12, ENABLE );
-
-    // ADC Channel configuration
-    // GPIOC Periph clock enable
-    RCC_AHBPeriphClockCmd( RCC_AHBPeriph_GPIOC, ENABLE );
-
-    // Configure ADC Channel7 as analog input
-    GPIO_InitStructure.GPIO_Pin = GPIO_PIN ;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
-    GPIO_Init( GPIOC, &GPIO_InitStructure );
-
-    ADC_StructInit( &ADC_InitStructure );
-
-    // Calibration procedure
-    ADC_VoltageRegulatorCmd( ADC1, ENABLE );
-
-    // Insert delay equal to 10 µs
-    //TaskDelay(5);
-    Timing_Delay(timedelay);
-
-    ADC_CommonInitStructure.ADC_Mode = ADC_Mode_Independent;
-    ADC_CommonInitStructure.ADC_Clock = ADC_Clock_SynClkModeDiv4; //ADC_Clock_AsynClkMode;
-    ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_Disabled;
-    ADC_CommonInitStructure.ADC_DMAMode = ADC_DMAMode_OneShot;
-    ADC_CommonInitStructure.ADC_TwoSamplingDelay = 0;
-    ADC_CommonInit( ADC1, &ADC_CommonInitStructure );
-
-    ADC_SelectCalibrationMode( ADC1, ADC_CalibrationMode_Single );
-    ADC_StartCalibration( ADC1 );
-
-    while ( ADC_GetCalibrationStatus( ADC1 ) != RESET );
-    calibration_value = ADC_GetCalibrationValue( ADC1 );
-
-    ADC_InitStructure.ADC_ContinuousConvMode = ADC_ContinuousConvMode_Disable;
-    ADC_InitStructure.ADC_Resolution = ADC_Resolution_12b;
-    ADC_InitStructure.ADC_ExternalTrigConvEvent = ADC_ExternalTrigConvEvent_0;
-    ADC_InitStructure.ADC_ExternalTrigEventEdge = ADC_ExternalTrigEventEdge_None;
-    ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
-    ADC_InitStructure.ADC_OverrunMode = ADC_OverrunMode_Disable;
-    ADC_InitStructure.ADC_AutoInjMode = ADC_AutoInjec_Disable;
-    ADC_InitStructure.ADC_NbrOfRegChannel = 1;
-    ADC_Init( ADC1, &ADC_InitStructure );
-
-    // ADC1 regular channel configuration
-    ADC_RegularChannelConfig( ADC1, ADC_Channel, 1, ADC_SampleTime_7Cycles5 );
-
-    // Enable ADC1
-    ADC_Cmd( ADC1, ENABLE );
-
-    // wait for ADRDY
-    while( !ADC_GetFlagStatus( ADC1, ADC_FLAG_RDY ) );
-
-    // Start ADC1 Software Conversion
-    ADC_StartConversion( ADC1 );
-}
-uint16_t Get_Voltage()
-{
-	 	uint16_t  ADC1ConvertedValue = 0;
-
-	    // Test EOC flag
-	    while ( ADC_GetFlagStatus( ADC1, ADC_FLAG_EOC ) == RESET );
-
-	    // Get ADC1 converted data
-	    ADC1ConvertedValue = ADC_GetConversionValue( ADC1 );
-
-	    // Compute the voltage (3.3V @ 12bit resolution)
-	    ADC1ConvertedValue = ( ADC1ConvertedValue * 3300 ) / 0xFFF;
-	    //ADC1ConvertedValue = ( ADC1ConvertedValue * 3000 ) / 0xFFF;
-
-	    ADC_StopConversion(ADC1);
-	    //ADC_DisableCmd(ADC1);
-	    ADC_DeInit(ADC1);
-
-	    return ADC1ConvertedValue;
-}
-uint32_t Get_Temperature()
-{
-	__IO uint32_t Temp;
-	__IO uint32_t Voltage;
-	Config_ADC(GPIO_Pin_1, ADC_Channel_7);
-	Voltage = Get_Voltage();
-
-	Voltage = Voltage * 10000;
-	Temp = Voltage * 27.992;
-	Temp = Temp - 227350000;
-
-	return Temp;
-}
-uint32_t Get_Baro()
-{
-	__IO uint32_t Pressure = 0;
-	__IO uint32_t Voltage = 0;
-	Config_ADC(GPIO_Pin_0, ADC_Channel_6);
-	Voltage = Get_Voltage();
-
-	Voltage = Voltage * 10000;
-	Pressure = Voltage / 0.036278;//0.68*Vdd*a
-	//Pressure = Pressure / 1000;
-	Pressure = Pressure + 306157000;//-a/b
-
-	return Pressure;
-}
-
-float Calc_altitude(uint32_t sea_press, uint32_t press, uint32_t temp)
-{
-	uint8_t i=0;
-	long double exp=0;
-	double height;
-	//double exp=1/5.257;
-	height = (double)sea_press / (double)press;
-	exp=height*height;
-	for(i=1; i<100;i=i+1)
-	{
-		exp=exp*height;
-	}
-	height=root(height, 525);
-    //height = powf(height, 0.5f);// 0.1902225604f);
-    height = height-1;
-    temp = temp + 2731500;
-    temp=temp/10000;
-    height = height * temp;
-    height = height / 0.0065;
-
-    return height;
-}
 inline double abs_(double x) { return x >= 0 ? x : -x; }
 double pow_(double x, int e)
 {
@@ -1213,19 +871,6 @@ double pow_(double x, int e)
 		if ((e & 1)) ret *= x;
 	return ret;
 }
-/*
-double root(double a, uint8_t n)
-{
-	double d, x = 1;
-	if (!a) return 0;
-	if (n < 1 || (a < 0 && !(n&1))) return 0./0.; // NaN
-
-	do {	d = (a / pow_(x, n - 1) - x) / n;
-		x+= d;
-	} while (abs_(d) >= abs_(x) * (DBL_EPSILON * 10));
-
-	return x;
-}*/
 void Display_Pulse_Width(uint16_t value)
 {
 	char dig, i;
@@ -1236,7 +881,6 @@ void Display_Pulse_Width(uint16_t value)
 		dig = value % 10;
 		value = value / 10;
 		message[i]=dig+48;
-		//a=a*10;
 	}
 	for(i=5; i > 0; i=i-1)
 	{
@@ -1245,103 +889,6 @@ void Display_Pulse_Width(uint16_t value)
 	USART1_Send(' ');
 	USART1_Send(' ');
 
-}
-void Display_Temperature(uint32_t value)
-{
-	char dig, i;
-	char message[9];
-	uint32_t a = 1;
-	for(i=0; i <= 9; i=i+1)
-	{
-		dig = value % 10;
-		value = value / 10;
-		if (i==7)
-		{
-			message[i]='.';
-			i=i+1;
-		}
-		message[i]=dig+48;
-		//a=a*10;
-	}
-	for(i=9; i > 0; i=i-1)
-	{
-		USART1_Send(message[i]);
-	}
-	USART1_Send('C');
-    USART1_Send('\n');
-    USART1_Send('\r');
-
-}
-double Display_Longitude(uint16_t value1, float value2 )
-{
-	char dig, i;
-	uint16_t dec = value1;
-	char message1[3];
-	char message2[6];
-	double dec_deg = 0;
-	uint16_t a = 1;
-	uint32_t num;
-	for(i=0; i <= 3; i=i+1)
-	{
-		dig = value1 % 10;
-		value1 = value1 / 10;
-		message1[i]=dig+48;
-		//a=a*10;
-	}
-	for(i=3; i > 0; i=i-1)
-	{
-		USART1_Send(message1[i-1]);
-	}
-	USART1_Send('.');
-	num = value2 * 10000;
-	num = num / 60;
-	for(i=0; i <= 6; i=i+1)
-	{
-		dig = num % 10;
-		num = num / 10;
-		message1[i]=dig+48;
-		//a=a*10;
-	}
-	for(i=4; i > 0; i=i-1)
-	{
-		USART1_Send(message1[i-1]);
-	}
-	USART1_Send(0xF8);//degrees
-    USART1_Send('\n');
-    USART1_Send('\r');
-
-    dec_deg = num / 100000;
-    dec_deg = dec_deg + dec;
-
-    return dec_deg;
-}
-void Display_Altitude(uint16_t value)
-{
-	char dig, i;
-	char message[5];
-	dig = value % 10;
-	value = value / 10;
-	message[0] = dig + 48;
-	message[1] = '.';
-	dig = value % 10;
-	value = value / 10;
-	message[2] = dig + 48;
-	dig = value % 10;
-	value = value / 10;
-	message[3] = dig + 48;
-	dig = value % 10;
-	value = value / 10;
-	message[4] = dig + 48;
-	dig = value % 10;
-	value = value / 10;
-	message[5] = dig + 48;
-	for(i=5; i != 0; i=i-1)
-	{
-		USART1_Send(message[i-1]);
-	}
-	USART1_Send('M');
-	USART1_Send('\n');
-	USART1_Send('\r');
 }
 
 void Display_Heading(float value)
@@ -1382,156 +929,12 @@ void Display_Heading(float value)
 void USART1_IRQHandler(void)
 {
 	while((USART1->ISR & USART_FLAG_RXNE) == (uint16_t)RESET);
-	//if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
-	//{
 	rx = USART_ReceiveData(USART1);
-
-   duty_cycle1=rx;
-   duty_cycle2=rx;
-   duty_cycle3=rx;
-   duty_cycle4=rx;
-	//}
 }
 void USART3_IRQHandler(void)
 {
-
 	while((USART3->ISR & USART_FLAG_RXNE) == (uint16_t)RESET);
-	USART3_rx = USART_ReceiveData(USART3);
-	if (USART3_rx == '$')
-	{
-		string_pointer = 0;
-	}
-	NEMA_String[string_pointer]=USART3_rx;
-	USART1_Send(USART3_rx);
-	//USART1_Send(string_pointer + '0');
-	string_pointer++;
-	if(USART3_rx == '\r' || USART3_rx == '\n')
-	{
-		  //NVIC_InitTypeDef NVIC_InitStructure;
-		  USART_ITConfig(USART3, USART_IT_RXNE, DISABLE);
-		  USART1_Send('\r');
-		  USART1_Send('\n');
-		  //NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
-		  //NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-		  //NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-		  //NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-		  //NVIC_Init(&NVIC_InitStructure);
-	}
-}
-
-void EXTI0_IRQHandler(void){
-  EXTI_ClearITPendingBit(EXTI_Line0);
-  power = 1;
-  //arm_sequence();
-}
-void TIM4_IRQHandler(void)
-{
-	if (TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
-	}
-	if (TIM_GetITStatus(TIM4, TIM_IT_CC2) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
-	IN_CH1 = TIM4->CCR2;
-	}
-	if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
-	}
-
-
-}
-void TIM3_IRQHandler(void)
-{
-	if (TIM_GetITStatus(TIM3, TIM_IT_CC1) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM3, TIM_IT_CC1);
-	}
-	if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
-	IN_CH2 = TIM3->CCR2;
-	}
-	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-	}
-}
-void TIM8_CC_IRQHandler(void)
-{
-	if (TIM_GetITStatus(TIM8, TIM_IT_CC1) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM8, TIM_IT_CC1);
-	}
-	if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-	IN_CH3 = TIM8->CCR2;
-	}
-	if (TIM_GetITStatus(TIM8, TIM_IT_Update) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM8, TIM_IT_Update);
-	}
-}
-void TIM15_IRQHandler(void)
-{
-	if (TIM_GetITStatus(TIM15, TIM_IT_CC1) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM15, TIM_IT_CC1);
-	}
-	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
-	IN_CH4 = TIM15->CCR2;
-	}
-	if (TIM_GetITStatus(TIM15, TIM_IT_Update) != RESET)
-	{
-	TIM_ClearITPendingBit(TIM15, TIM_IT_Update);
-	}
-}
-void EXTI1_IRQHandler(void){
-
-  EXTI_ClearITPendingBit(EXTI_Line1);
-
-  if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1) == 1)
-  {
-	  //start counter
-	  TIM_Cmd(TIM4, ENABLE);
-	  EXTI_InitTypeDef EXTI_InitStructure;
-	  EXTI_InitStructure.EXTI_Line = EXTI_Line1;
-	  EXTI_InitStructure.EXTI_LineCmd = DISABLE;
-	  EXTI_Init(&EXTI_InitStructure);
-	  EXTI_InitStructure.EXTI_Line = EXTI_Line1;
-	  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-	  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-	  EXTI_Init(&EXTI_InitStructure);
-  }
-  else
-  {
-	  //Stop counter and update setpoint
-	  offset = TIM_GetCounter(TIM4);
-	  TIM_Cmd(TIM4, DISABLE);
-	  EXTI_InitTypeDef EXTI_InitStructure;
-	  EXTI_InitStructure.EXTI_LineCmd = DISABLE;
-	  EXTI_Init(&EXTI_InitStructure);
-	  EXTI_InitStructure.EXTI_Line = EXTI_Line1;
-	  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-	  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-	  EXTI_Init(&EXTI_InitStructure);
-	  //Display_Raw_Gyro(offset);
-  }
-}
-void EXTI2_IRQHandler(void){
-  EXTI_ClearITPendingBit(EXTI_Line2);
-}
-void EXTI3_IRQHandler(void){
-  EXTI_ClearITPendingBit(EXTI_Line3);
-}
-void EXTI4_IRQHandler(void){
-  EXTI_ClearITPendingBit(EXTI_Line4);
+	rx = USART_ReceiveData(USART3);
 }
 
 #ifdef  USE_FULL_ASSERT

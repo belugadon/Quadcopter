@@ -1,42 +1,22 @@
 #include "BLDC_Control.h"
 #include "math.h"
 #include "KalmanFilter.h"
-//#include "float.h"
-//#include "arm_math.h"
-//#include "core_CM4.h"
 
 
 #define ABS(x)         (x < 0) ? (-x) : x
-#define PI                         (float)     3.14159265f
 #define RadToDeg                   (int)  57295
 
-uint8_t PID = ENABLE;
-uint8_t Xval, Yval = 0x00;
 float Buffer[3] = {0.0f}, AccBuffer2[3] = {0.0f};
 int offsetA = 7000;
 int offsetB = 7000;
 int offsetC = 7000;
 int offsetD = 7000;
-int offsetA_High;
-int offsetB_High;
-int offsetC_High;
-int offsetD_High;
-int offsetA_Low;
-int offsetB_Low;
-int offsetC_Low;
-int offsetD_Low;
-int duty_cycleC;
-int duty_cycleB;
-int duty_cycleA;
-int duty_cycleD;
-int XSum_Of_Gyro;
-int YSum_Of_Gyro;
-float XTotal_Rotation;
-float YTotal_Rotation;
-int Throttle = 0;
-float AccYanglefloat;
-float AccXangle;
-float AccYangle;
+int offsetA_High, offsetB_High, offsetC_High, offsetD_High;
+int offsetA_Low, offsetB_Low, offsetC_Low, offsetD_Low;
+int duty_cycleC, duty_cycleB, duty_cycleA, duty_cycleD;
+int XSum_Of_Gyro, YSum_Of_Gyro;
+float XTotal_Rotation, YTotal_Rotation;
+float AccXangle, AccYangle;
 float chasetheX = 0.0;//positional setpoint
 float chasetheY = 0.0;//positional setpoint
 float SUMof_XError = 0;
@@ -48,9 +28,8 @@ float ControlY_Out = 0;
 int pwm_period;
 int ms_pulses2;
 int prescaler2;
-int interrupt_frequency = 50;//150;
+int interrupt_frequency = 50;
 int interrupt_period_int;
-float interrupt_period_float;
 
 
 //Set up the timer and schedule interruptions
@@ -58,7 +37,6 @@ void schedule_PI_interrupts()
 {
 	//cortexm4f_enable_fpu();
 	interrupt_period_int = (1/(float)interrupt_frequency)*1000;
-	interrupt_period_float = 1/(float)interrupt_frequency;
 	int clk = 36e6; // 36MHz -> system core clock. This is default on the stm32f3 discovery
 	/*
 	 * prescaler = ((clk/interrupt_frequency)/interrupt_frequency) - 1
@@ -94,7 +72,6 @@ void Display_Axis(int value)
 	int dig, i;
 	int temp;
 	char message[8];
-	//temp = (uint8_t)temp - temp;
 	if (value < 0)
 	{
 		temp = value*-1;
@@ -107,8 +84,6 @@ void Display_Axis(int value)
 		dig = temp %10;
 		temp = temp/10;
 		message[2] = dig+48;
-		//dig = temp %10;
-		//temp = temp/10;
 		message[3] = '.';
 		dig = temp %10;
 		temp = temp/10;
@@ -120,7 +95,6 @@ void Display_Axis(int value)
 		temp = temp/10;
 		message[6] = dig+48;
 		message[7] = '-';
-		//USART1_Send('-');
 		for(i=8; i != 0; i=i-1)
 		{
 			USART1_Send(message[i-1] );
@@ -137,8 +111,6 @@ void Display_Axis(int value)
 		dig = temp %10;
 		temp = temp/10;
 		message[2] = dig+48;
-		//dig = temp %10;
-		//temp = temp/10;
 		message[3] = '.';
 		dig = temp %10;
 		temp = temp/10;
@@ -154,35 +126,20 @@ void Display_Axis(int value)
 			USART1_Send(message[i-1] );
 		}
 	}
-	//USART1_Send(0xF8);//degrees
-    //USART1_Send('\n');
-    //USART1_Send('\r');
 }
 void cortexm4f_enable_fpu() {
     /* set CP10 and CP11 Full Access */
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
 }
 
-void disable_PI_control()
-{
-	PID = DISABLE;
-}
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*15;
-	chasetheX = (*roll + (0 - *pitch))*15;
-	Throttle = *value;
-	offsetA = 6900 + *value;// + (*value * (*roll))/2 + (*value * (0 - *pitch))/2;
-	offsetB = 6900 + *value;// + (*value * (*roll))/2 + (*value * (*pitch))/2;
-	offsetC = 6900 + *value;// + (*value * (0 - *roll))/2 + (*value * (*pitch))/2;
-	offsetD = 6900 + *value;// + (*value * (0 - *roll))/2 + (*value * (0 - *pitch))/2;
-	//offsetB = offsetB * ((*roll) + (*pitch)/2);
-	//offsetC = offsetC * ((0 - *roll) + (*pitch)/2);
-	//offsetD = offsetD * ((0 - *roll) + (0 - *pitch)/2);
-	//offsetA = 7000 + ((*value * (*roll)) * (0 - *pitch));
-	//offsetB = 7000 + ((*value * (*roll)) * (*pitch));
-	//offsetC = 7000 + ((*value * (0 - *roll)) * (*pitch));
-	//offsetD = 7000 + ((*value * (0 - *roll)) * (0 - *pitch));
+	chasetheY = (*roll + *pitch)*9;
+	chasetheX = (*roll + (0 - *pitch))*9;
+	offsetA = 6900 + *value;
+	offsetB = 6900 + *value;
+	offsetC = 6900 + *value;
+	offsetD = 6900 + *value;
 	offsetA = offsetA + *yaw/2;
 	offsetB = offsetB - *yaw/2;
 	offsetC = offsetC + *yaw/2;
@@ -201,10 +158,8 @@ void Calculate_Position()
     Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
     Demo_CompassReadAcc(AccBuffer2);
-    //AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*180)/PI;
-    //AccXangle = ((atan2f((float)AccBuffer2[2],(float)AccBuffer2[0]))*180)/PI;
+
     AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
-    //AccXangle = ((atan2f((float)AccBuffer2[2],(float)AccBuffer2[0]))*RadToDeg);//*180)/PI;
     AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
 
     XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/10;
@@ -237,46 +192,6 @@ void Adjust_Yaw(int* value)
 	duty_cycleD = duty_cycleD - *value;
 }
 
-//void Delay(uint32_t delay) {
-//    while (delay--);
-//}
-void update_control_signals(uint16_t* width)
-{
-	duty_cycleC = *width;
-	duty_cycleB = *width;
-	duty_cycleA = *width;
-	duty_cycleD = *width;
-}
-void init_BT_Pair_Sense()
-{
-
-
-	GPIO_InitTypeDef GPIO_InitStructure;
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN; // Input
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // GPIO speed - has nothing to do with the timer timing
-	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; // Push-pull
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL; // Setup pull-up resistors
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    //Configure Button EXTI line
-    EXTI_InitTypeDef EXTI_InitStructure;
-    EXTI_InitStructure.EXTI_Line = EXTI_Line0;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    //EXTI_Init(&EXTI_InitStructure);
-
-
-    //set priotity
-    NVIC_InitTypeDef NVIC_InitStructure;
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-}
 void bounds_check()
 {
 	if(duty_cycleC >= offsetC_High)
@@ -311,89 +226,6 @@ void bounds_check()
 	{
 		duty_cycleD = offsetD_Low;
 	}
-}
-void low_bounds_check()
-{
-	if(duty_cycleC >= offsetC)
-	{
-		duty_cycleC = offsetC;
-	}
-	else if(duty_cycleC <= offsetC-1000)
-	{
-		duty_cycleC = offsetC-1000;
-	}
-	if(duty_cycleB >= offsetB)
-	{
-		duty_cycleB = offsetB;
-	}
-	else if(duty_cycleB <= offsetB-1000)
-	{
-		duty_cycleB = offsetB-1000;
-	}
-	if(duty_cycleA >= offsetA)
-	{
-		duty_cycleA = offsetA;
-	}
-	else if(duty_cycleA <= offsetA-1000)
-	{
-		duty_cycleA = offsetA-1000;
-	}
-	if(duty_cycleD >= offsetD)
-	{
-		duty_cycleD = offsetD;
-	}
-	else if(duty_cycleD <= offsetD-1000)
-	{
-		duty_cycleD = offsetD-1000;
-	}
-}
-void arm_sequence()
-{
-	/*
-	 * This function is used to arm the ESC by setting the PWM throttle control
-	 * to it's max value, holding for 2 seconds and then ramping the PWM output to
-	 * it's minimum throttle value.
-	 */
-	duty_cycleC = 18000;
-	duty_cycleB = 18000;
-	duty_cycleA = 18000;
-	duty_cycleD = 18000;
-	pwm_period = slow_init_pwm(700);
-	int timedelay1 = 5000000;
-	int timedelay2 = 3000;
-	int timedelay3 = 3000000;
-
-	set_pwm_width(1, pwm_period, duty_cycleC);
-	set_pwm_width(2, pwm_period, duty_cycleB);
-	set_pwm_width(3, pwm_period, duty_cycleA);
-	set_pwm_width(4, pwm_period, duty_cycleD);
-
-	while(timedelay1 >= 0)
-	{
-		timedelay1--;
-	}
-	while(duty_cycleC >= 8000)
-	{
-		while(timedelay2 >= 0)
-		{
-			timedelay2--;
-		}
-		duty_cycleC=duty_cycleC-1000;
-		duty_cycleB=duty_cycleB-1000;
-		duty_cycleA=duty_cycleA-1000;
-		duty_cycleD=duty_cycleD-1000;
-
-		set_pwm_width(1, pwm_period, duty_cycleC);
-		set_pwm_width(2, pwm_period, duty_cycleB);
-		set_pwm_width(3, pwm_period, duty_cycleA);
-		set_pwm_width(4, pwm_period, duty_cycleD);
-		timedelay2 = 3000;
-	}
-	while(timedelay3 >= 0)
-	{
-		timedelay3--;
-	}
-	//balance();
 }
 void init_pwm_gpio()
 {
@@ -437,7 +269,7 @@ int init_pwm()
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 	TIM_TimeBaseStructInit(& TIM_TimeBaseStructure);
 	TIM_TimeBaseStructure.TIM_Prescaler = prescaler2;
-	TIM_TimeBaseStructure.TIM_Period = 2860;//2857;//pwm_period - 1;
+	TIM_TimeBaseStructure.TIM_Period = 2860;
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up ;
 	TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
@@ -449,9 +281,8 @@ int init_pwm()
 	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 
-	TIM_OCInitStructure.TIM_Pulse = ms_pulses2*2; // preset pulse width 0..pwm_period
-	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High; // Pulse polarity
-	//	  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+	TIM_OCInitStructure.TIM_Pulse = ms_pulses2*2;
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
 	TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
 
 	// These settings must be applied on the timer 1.
@@ -477,7 +308,6 @@ int init_pwm()
 	TIM_OC4PreloadConfig(TIM1, TIM_OCPreload_Enable);
 
 	// Starup the timer
-	//TIM_ARRPreloadConfig(TIM1, DISABLE);
 	TIM_ARRPreloadConfig(TIM1, DISABLE);
 	TIM_CtrlPWMOutputs(TIM1, ENABLE);
 	TIM_Cmd(TIM1 , ENABLE);
@@ -490,9 +320,7 @@ int slow_init_pwm(int pwm_freq)
 	int prescaler = ((clk / tim_freq) - 1);
 	prescaler2 = ((clk / tim_freq) - 1);
 	// Calculate the period for a given pwm frequency
-	//		int pwm_freq = 200; // in Hz
-	int pwm_period = tim_freq/pwm_freq;		// 2MHz / 200Hz = 10000
-												// For 50Hz we get: 2MHz / 50Hz = 40000
+	int pwm_period = tim_freq/pwm_freq;
 
 	// Calculate a number of pulses per millisecond.
 	// Not used in this routine but I put it here just as an example
@@ -528,7 +356,7 @@ int slow_init_pwm(int pwm_freq)
 	TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
 	TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Set;
 
-// Setup four channels
+    // Setup four channels
 	// Channel 1
 	TIM_OC1Init(TIM1, &TIM_OCInitStructure);
 	TIM_OC1PreloadConfig(TIM1, TIM_OCPreload_Enable);
@@ -546,7 +374,6 @@ int slow_init_pwm(int pwm_freq)
 	TIM_OC4PreloadConfig(TIM1, TIM_OCPreload_Enable);
 
 	// Starup the timer
-	//TIM_ARRPreloadConfig(TIM1, DISABLE);
 	TIM_ARRPreloadConfig(TIM1, DISABLE);
 	TIM_CtrlPWMOutputs(TIM1, ENABLE);
 	TIM_Cmd(TIM1 , ENABLE);
@@ -597,28 +424,6 @@ float gammaCorrect(int b, int c)
 	return f*f*f*f*f; // gamma = 5
 }
 
-void Decrease_Angular_Position(uint8_t value)
-{
-	if (value == 'x')
-	{
-		XTotal_Rotation--;
-	}
-	else if (value == 'y')
-	{
-		YTotal_Rotation--;
-	}
-}
-void Increase_Angular_Position(uint8_t value)
-{
-	if (value == 'x')
-	{
-		XTotal_Rotation++;
-	}
-	else if (value == 'y')
-	{
-		YTotal_Rotation++;
-	}
-}
 Display_DC(int value)
 {
 	uint8_t dig1, dig2;
@@ -635,7 +440,7 @@ void TIM2_IRQHandler()
 {
     if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
     {
-    	float Xerror = 0; //instantaneous error
+    	float Xerror = 0;
     	float Yerror = 0;
     	float SlopeofXError = 0.0;
     	float SlopeofYError = 0;
@@ -643,7 +448,6 @@ void TIM2_IRQHandler()
         init_pwm();
 
         if (offsetA >= 8000){
-
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
@@ -674,63 +478,24 @@ void TIM2_IRQHandler()
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        ControlX_Out = (0.02 * Xerror) + (0.025 * SUMof_XError);// + (0.03 * SlopeofYError);
-        ControlY_Out = (0.02 * Yerror) + (0.025 * SUMof_YError);// + (0.03 * SlopeofYError);
+        ControlX_Out = (0.035 * Xerror) + (0.025 * SUMof_XError) + (0.04 * SlopeofYError);
+        ControlY_Out = (0.035 * Yerror) + (0.025 * SUMof_YError) + (0.04 * SlopeofYError);
         }
         else{
         ControlX_Out = 0;
         ControlY_Out = 0;
         }
         duty_cycleC = 0 - (ControlX_Out) + offsetC;
-        duty_cycleA = ControlX_Out + offsetA;// * 1.1);
-        duty_cycleD = 0 - (ControlY_Out) + offsetD;// * 1.6);
+        duty_cycleA = ControlX_Out + offsetA;
+        duty_cycleD = 0 - (ControlY_Out) + offsetD;
         duty_cycleB = ControlY_Out + offsetB;
 
 
-//        if(PID == ENABLE)
-//       {
         	bounds_check();
-//        }
-//        else if(PID == DISABLE)
-//        {
-//        	low_bounds_check();
-//        }
-        	//Display_DC(duty_cycleD);
-        	//USART1_Send(' ');
         	set_pwm_width(2, pwm_period, duty_cycleD);
-        	//Display_DC(duty_cycleC);
-        	//USART1_Send(' ');
         	set_pwm_width(1, pwm_period, duty_cycleC);
-        	//Display_DC(duty_cycleB);
-        	//USART1_Send(' ');
         	set_pwm_width(4, pwm_period, duty_cycleB);
-        	//Display_DC(duty_cycleA);
-        	//USART1_Send(' ');
         	set_pwm_width(3, pwm_period, duty_cycleA);
 
-/*
-        USART1_Send('A');
-        USART1_Send(':');
-        Display_Axis(duty_cycleA);
-        USART1_Send(',');
-        USART1_Send(' ');
-        USART1_Send('B');
-        USART1_Send(':');
-        Display_Axis(duty_cycleB);
-        USART1_Send(',');
-        USART1_Send(' ');
-        USART1_Send('C');
-        USART1_Send(':');
-        Display_Axis(duty_cycleC);
-        USART1_Send(',');
-        USART1_Send(' ');
-        USART1_Send('D');
-        USART1_Send(':');
-        Display_Axis(duty_cycleD);
-        //USART1_Send(',');
-        //USART1_Send(' ');
-        //USART1_Send('\n');
-        USART1_Send('\r');
-        */
     }
 }
