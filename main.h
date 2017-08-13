@@ -40,7 +40,7 @@
 #include "usb_pwr.h"
 #include "platform_config.h"
 #include "math.h"
-//#include "stm32f30x_it.h"
+#include "stm32f30x_it.h"
 #include <float.h>
 #include "GPS.h"
 #include "BLDC_Control.h"
@@ -53,45 +53,18 @@ void Demo_USB (void);
 void PWMInput_Config();
 void Calibrate_RX_Inputs();
 void get_heading();
-void Demo_GyroConfig(void);
+void GyroConfig(void);
 void Calculate_Gyro_Drift();
-void Demo_GyroReadAngRate (float* pfData);
-void Demo_CompassConfig(void);
-void Demo_CompassReadMag (float* pfData);
-void Demo_CompassReadAcc(float* pfData);
+void GyroReadAngRate (float* pfData);
+void CompassConfig(void);
+void CompassReadMag (float* pfData);
+void CompassReadAcc(float* pfData);
 void TimingDelay_Decrement(void);
 void Timing_Delay(uint32_t delay);
 void USART3_Configuration();
-void TX_GPS();
 void GPIO_Configuration2();
-void Config_ADC(uint16_t GPIO_Pin, uint16_t ADC_Channel);
-uint16_t Get_Voltage();
-uint32_t Get_Temperature();
-uint32_t Get_Baro();
-uint8_t get_location();
-float Calc_altitude(uint32_t sea_press, uint32_t press, uint32_t temp);
-double pow_(double x, int e);
-double root(double a, uint8_t n);
-void Display_Pressure(uint32_t value);
-void Display_Temperature(uint32_t value);
-double DEG_MIN_TO_DEC(uint16_t value1, float value2 );
-double Display_Longitude(uint16_t value1, float value2);
-void Display_Altitude(uint16_t value);
 void Display_Heading(float value);
-void Display_Angular_velocity(uint16_t value);
-void Display_Raw_Gyro(int8_t value);
-void Display_Conditioned_Gyro(float value);
-void Delay(__IO uint32_t nTime);
 
-//GPS Structure definition
-//typedef struct
-//{
-//	uint16_t Long_Deg;
-//	float Long_Min;
-//	uint16_t Lat_Deg;
-//	float Lat_Min;
-//	uint16_t altitude;
-//}GPS_TypeDef;
 
 
 #endif /* __MAIN_H */

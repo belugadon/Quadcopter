@@ -155,9 +155,9 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 }
 void Calculate_Position()
 {
-    Demo_GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
+    GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
-    Demo_CompassReadAcc(AccBuffer2);
+    CompassReadAcc(AccBuffer2);
 
     AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
     AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
@@ -235,7 +235,7 @@ void init_pwm_gpio()
 	// Setup the LEDs
 	// Check out the Discovery schematics
 	// http://www.st.com/st-web-ui/static/active/en/resource/technical/document/user_manual/DM00063382.pdf
-		//    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+	//    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOE, ENABLE);
@@ -334,7 +334,7 @@ int slow_init_pwm(int pwm_freq)
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 	TIM_TimeBaseStructInit(& TIM_TimeBaseStructure);
 	TIM_TimeBaseStructure.TIM_Prescaler = prescaler;
-	TIM_TimeBaseStructure.TIM_Period = 2857;//pwm_period - 1;
+	TIM_TimeBaseStructure.TIM_Period = 2857;
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up ;
 	TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
@@ -346,9 +346,8 @@ int slow_init_pwm(int pwm_freq)
 	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
 
-	TIM_OCInitStructure.TIM_Pulse = ms_pulses*2; // preset pulse width 0..pwm_period
-	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High; // Pulse polarity
-	//	  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+	TIM_OCInitStructure.TIM_Pulse = ms_pulses*2;
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
 	TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
 
 	// These settings must be applied on the timer 1.
@@ -390,7 +389,6 @@ int slow_init_pwm(int pwm_freq)
 void set_pwm_width(int channel, int pwm_period, uint32_t duty_cycle)//float* duty_cycle)
 {
 	int pwm_pulses = (pwm_period*duty_cycle)/100000;
-	//int pwm_pulses = pwm_period*(*duty_cycle)/100.0;
 	switch (channel){
 		case 1: TIM_SetCompare1(TIM1, pwm_pulses); break;
 		case 2: TIM_SetCompare2(TIM1, pwm_pulses); break;
@@ -415,25 +413,6 @@ void set_pwm_width_norm(int channel, int pwm_period, float duty_cycle)
 		case 4: TIM_SetCompare4(TIM1, pwm_pulses); break;
 	}
 }
-
-// Just simple exponential mapping
-// Not important for this demo
-float gammaCorrect(int b, int c)
-{
-	double f = ((double)b/(float)c);
-	return f*f*f*f*f; // gamma = 5
-}
-
-Display_DC(int value)
-{
-	uint8_t dig1, dig2;
-	dig1 = value % 10;
-	value = value/10;
-	dig2 = value % 10;
-	USART1_Send(dig2+48);
-	USART1_Send(dig1+48);
-}
-
 
 
 void TIM2_IRQHandler()

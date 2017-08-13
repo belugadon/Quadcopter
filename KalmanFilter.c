@@ -1,4 +1,4 @@
-//#include "KalmanFilter.h"
+#include "KalmanFilter.h"
 
 float XQ_angle  =  0.001;
 float XQ_bias   =  0.003;

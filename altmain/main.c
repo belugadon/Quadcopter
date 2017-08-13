@@ -38,13 +38,7 @@
 #include "stm32f3_discovery_l3gd20.h"
 #include "stm32f3_discovery_lsm303dlhc.h"
 #include "stm32f3_discovery.h "
-/** @addtogroup STM32F3-Discovery_Demo
-  * @{
-  */
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
 #define ABS(x)         (x < 0) ? (-x) : x
 #define RadToDeg                   (uint32_t)  57295
 
@@ -94,26 +88,19 @@ float Gyro_YOffset = 0;
 
 int main(void)
 {
-	int a = 0;
-  uint8_t i = 0;
 
-  /* SysTick end of count event each 10ms */
-  RCC_GetClocksFreq(&RCC_Clocks);
-  SysTick_Config(RCC_Clocks.HCLK_Frequency / 100);
-  RCC_Configuration();
-  STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI);
-  GPIO_Configuration();
-  GPIO_Configuration2();
-  USART1_Configuration();
-  USART3_Configuration();
+    /* SysTick end of count event each 10ms */
+    RCC_GetClocksFreq(&RCC_Clocks);
+    SysTick_Config(RCC_Clocks.HCLK_Frequency / 100);
+    RCC_Configuration();
+    GPIO_Configuration();
+    GPIO_Configuration2();
+    USART1_Configuration();
+    USART3_Configuration();
   
-  /* Reset UserButton_Pressed variable */
-  UserButtonPressed = 0x00; 
    
-    Demo_USB();
-    /* Demo Gyroscope */
-    Demo_GyroConfig();
-    Demo_CompassConfig();
+    GyroConfig();
+    CompassConfig();
     init_pwm_gpio();
     int pwm_period = init_pwm(300);
 	PWMInput_Config();
@@ -142,40 +129,40 @@ void PWMInput_Config()
 	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOD, ENABLE);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF; // Input
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // GPIO speed - has nothing to do with the timer timing
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD; // Push-pull
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN; // Setup pull-up resistors
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
 	GPIO_Init(GPIOD, &GPIO_InitStructure);
 	GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_2);
 	GPIO_ResetBits(GPIOD,GPIO_Pin_12);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF; // Input
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // GPIO speed - has nothing to do with the timer timing
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD; // Push-pull
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN; // Setup pull-up resistors
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_2);
 	GPIO_ResetBits(GPIOC,GPIO_Pin_6);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF; // Input
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // GPIO speed - has nothing to do with the timer timing
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD; // Push-pull
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN; // Setup pull-up resistors
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_2);
 	GPIO_ResetBits(GPIOA,GPIO_Pin_15);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOF, ENABLE);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF; // Input
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; // GPIO speed - has nothing to do with the timer timing
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD; // Push-pull
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN; // Setup pull-up resistors
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
 	GPIO_Init(GPIOF, &GPIO_InitStructure);
 	GPIO_PinAFConfig(GPIOF, GPIO_PinSource9, GPIO_AF_3);
 	GPIO_ResetBits(GPIOF,GPIO_Pin_9);
@@ -211,28 +198,28 @@ void PWMInput_Config()
 
     TIM_ICInitTypeDef inputCaptureInitStructure;
     TIM_ICStructInit(&inputCaptureInitStructure);
-    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;// | TIM_Channel_2;
+    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;
     inputCaptureInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     inputCaptureInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
     inputCaptureInitStructure.TIM_ICFilter = 0x01;
     TIM_PWMIConfig(TIM4, &inputCaptureInitStructure);
 
     TIM_ICStructInit(&inputCaptureInitStructure);
-    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;// | TIM_Channel_2;
+    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;
     inputCaptureInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     inputCaptureInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
     inputCaptureInitStructure.TIM_ICFilter = 0x01;
     TIM_PWMIConfig(TIM3, &inputCaptureInitStructure);
 
     TIM_ICStructInit(&inputCaptureInitStructure);
-    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;// | TIM_Channel_2;
+    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;
     inputCaptureInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     inputCaptureInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
     inputCaptureInitStructure.TIM_ICFilter = 0x01;
     TIM_PWMIConfig(TIM8, &inputCaptureInitStructure);
 
     TIM_ICStructInit(&inputCaptureInitStructure);
-    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;// | TIM_Channel_2;
+    inputCaptureInitStructure.TIM_Channel = TIM_Channel_1;
     inputCaptureInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     inputCaptureInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
     inputCaptureInitStructure.TIM_ICFilter = 0x01;
@@ -253,31 +240,6 @@ void PWMInput_Config()
     TIM_SelectInputTrigger(TIM15, TIM_TS_TI1FP1);
     TIM_SelectSlaveMode(TIM15, TIM_SlaveMode_Reset);
     TIM_SelectMasterSlaveMode(TIM15,TIM_MasterSlaveMode_Enable);
-
-    NVIC_InitTypeDef nvicStructure;
-    nvicStructure.NVIC_IRQChannel = TIM4_IRQn;
-    nvicStructure.NVIC_IRQChannelPreemptionPriority = 2;
-    nvicStructure.NVIC_IRQChannelSubPriority = 0;
-    nvicStructure.NVIC_IRQChannelCmd = ENABLE;
-    //NVIC_Init(&nvicStructure);
-
-    nvicStructure.NVIC_IRQChannel = TIM3_IRQn;
-    nvicStructure.NVIC_IRQChannelPreemptionPriority = 3;
-    nvicStructure.NVIC_IRQChannelSubPriority = 0;
-    nvicStructure.NVIC_IRQChannelCmd = ENABLE;
-    //NVIC_Init(&nvicStructure);
-
-    nvicStructure.NVIC_IRQChannel = TIM8_CC_IRQn;
-    nvicStructure.NVIC_IRQChannelPreemptionPriority = 4;
-    nvicStructure.NVIC_IRQChannelSubPriority = 0;
-    nvicStructure.NVIC_IRQChannelCmd = ENABLE;
-    //NVIC_Init(&nvicStructure);
-
-    nvicStructure.NVIC_IRQChannel = TIM1_BRK_TIM15_IRQn;
-    nvicStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    nvicStructure.NVIC_IRQChannelSubPriority = 0;
-    nvicStructure.NVIC_IRQChannelCmd = ENABLE;
-    //NVIC_Init(&nvicStructure);
 
     TIM_ClearITPendingBit(TIM4, TIM_IT_Update|TIM_IT_CC3|TIM_IT_CC4);
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update|TIM_IT_CC3|TIM_IT_CC4);
@@ -330,20 +292,6 @@ void Calibrate_RX_Inputs()
 	for(i=0;i<10;i++){
 	while((Sample == 0) || (Sample >= 20000))
 	{
-		if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
-		{
-		TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-		Sample = TIM8->CCR2;
-		Sum = Sum + Sample;
-		}
-	}
-	Sample = 0;
-	}
-	IN_CH3_OFFSET = Sum/10;
-	Sum = 0;
-	for(i=0;i<10;i++){
-	while((Sample == 0) || (Sample >= 20000))
-	{
 		if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 		{
 		TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
@@ -373,14 +321,14 @@ void Get_Control_Channels()
 	if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
-	IN_CH3 = TIM8->CCR2;// - IN_CH3_OFFSET;
+	IN_CH3 = TIM8->CCR2;
 	IN_CH3 = (IN_CH3 - 9161);
 	IN_CH3 = IN_CH3 * 2;
 	}
 	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
-	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;//12250;
+	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;
 	}
 }
 
@@ -388,14 +336,14 @@ void get_heading()
 {
 	uint8_t i;
 	DataReady = 0x00;
-    Demo_CompassConfig();
+    CompassConfig();
 
     /* Wait for data ready */
     while(DataReady !=0x05)
     {}
     DataReady = 0x00;
-    Demo_CompassReadMag(MagBuffer);
-    Demo_CompassReadAcc(AccBuffer);
+    CompassReadMag(MagBuffer);
+    CompassReadAcc(AccBuffer);
 
     for(i=0;i<3;i++)
         AccBuffer[i] /= 100.0f;
@@ -414,27 +362,11 @@ void get_heading()
 }
 
 /**
-  * @brief  Configure the USB.
-  * @param  None
-  * @retval None
-  */
-void Demo_USB (void)
-{
-  Set_System();
-  Set_USBClock();
-  USB_Interrupts_Config();
-
-  USB_Init();
-
-  while ((bDeviceState != CONFIGURED)&&(USBConnectTimeOut != 0))
-  {}
-}
-/**
   * @brief  Configure the Mems to gyroscope application.
   * @param  None
   * @retval None
   */
-void Demo_GyroConfig(void)
+void GyroConfig(void)
 {
   L3GD20_InitTypeDef L3GD20_InitStructure;
   L3GD20_FilterConfigTypeDef L3GD20_FilterStructure;
@@ -460,7 +392,7 @@ void Demo_GyroConfig(void)
   * @param  pfData : Data out pointer
   * @retval None
   */
-void Demo_GyroReadAngRate (float* pfData)
+void GyroReadAngRate (float* pfData)
 {
   uint8_t tmpbuffer[6] ={0};
   int16_t RawData[3] = {0};
@@ -517,7 +449,7 @@ void Calculate_Gyro_Drift()
 /*
  * This function repeatedly samples the gyro's output during an assumed period of inactivity.
  * these samples are summed and divided by the total number of samples to give the average
- * drift of the gyro. The value calculated is subtracted from the read gyro output
+ * drift of the gyro. The value calculated is subtracted from the observed gyro output
  */
 	uint8_t i;
 	float X_SUM = 0;
@@ -525,11 +457,11 @@ void Calculate_Gyro_Drift()
 	Gyro_XOffset = 0;
 	Gyro_YOffset = 0;
 
-	for (i=0;i<10;i++){ Demo_GyroReadAngRate(Buff); }
+	for (i=0;i<10;i++){ GyroReadAngRate(Buff); }
 
 	for (i=0;i<50;i++)
 	{
-		Demo_GyroReadAngRate(Buff);
+		GyroReadAngRate(Buff);
 		X_SUM = X_SUM + Buff[0];
 		Y_SUM = Y_SUM + Buff[1];
 	}
@@ -542,7 +474,7 @@ void Calculate_Gyro_Drift()
   * @param  None
   * @retval None
   */
-void Demo_CompassConfig(void)
+void CompassConfig(void)
 {
   LSM303DLHCMag_InitTypeDef LSM303DLHC_InitStructure;
   LSM303DLHCAcc_InitTypeDef LSM303DLHCAcc_InitStructure;
@@ -580,7 +512,7 @@ void Demo_CompassConfig(void)
 * @param pnData: pointer to float buffer where to store data
 * @retval None
 */
-void Demo_CompassReadAcc(float* pfData)
+void CompassReadAcc(float* pfData)
 {
   int16_t pnRawData[3];
   uint8_t ctrlx[2];
@@ -652,7 +584,7 @@ void Demo_CompassReadAcc(float* pfData)
 * @param  pfData: pointer to the data out
   * @retval None
   */
-void Demo_CompassReadMag (float* pfData)
+void CompassReadMag (float* pfData)
 {
   static uint8_t buffer[6] = {0};
   uint8_t CTRLB = 0;
@@ -705,12 +637,6 @@ void Demo_CompassReadMag (float* pfData)
   }
   pfData[2]=(float)((int16_t)(((uint16_t)buffer[4] << 8) + buffer[5])*1000)/Magn_Sensitivity_Z;
 }
-void Delay(__IO uint32_t nTime)
-{
-  TimingDelay = nTime;
-
-  while(TimingDelay != 0);
-}
 
 /**
   * @brief  Decrements the TimingDelay variable.
@@ -759,8 +685,6 @@ void RCC_Configuration(void)
   // Enable USART clock
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
-
-
 }
 
 void GPIO_Configuration(void)
@@ -863,14 +787,6 @@ void USART1_Send(char character)
     USART_SendData(USART1, character);
 }
 
-inline double abs_(double x) { return x >= 0 ? x : -x; }
-double pow_(double x, int e)
-{
-	double ret = 1;
-	for (ret = 1; e; x *= x, e >>= 1)
-		if ((e & 1)) ret *= x;
-	return ret;
-}
 void Display_Pulse_Width(uint16_t value)
 {
 	char dig, i;
@@ -897,7 +813,6 @@ void Display_Heading(float value)
 	float temp;
 	char message[7];
 	temp = value;
-	//temp = (uint8_t)temp - temp;
 	dig = temp*1000;
 	dig = dig %10;
 	message[0] = dig+48;
