@@ -323,7 +323,7 @@ void Get_Control_Channels()
 	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
 	IN_CH3 = TIM8->CCR2;
 	IN_CH3 = (IN_CH3 - 9161);
-	IN_CH3 = IN_CH3 * 2;
+	IN_CH3 = IN_CH3 * 3;
 	}
 	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 	{

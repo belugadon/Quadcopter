@@ -144,14 +144,14 @@ void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 	offsetB = offsetB - *yaw/2;
 	offsetC = offsetC + *yaw/2;
 	offsetD = offsetD - *yaw/2;
-	offsetA_High = offsetA + 2500;
-	offsetB_High = offsetB + 2500;
-	offsetC_High = offsetC + 2500;
-	offsetD_High = offsetD + 2500;
-	offsetA_Low = offsetA - 2500;
-	offsetB_Low = offsetB - 2500;
-	offsetC_Low = offsetC - 2500;
-	offsetD_Low = offsetD - 2500;
+	offsetA_High = offsetA + 1500;
+	offsetB_High = offsetB + 1500;
+	offsetC_High = offsetC + 1500;
+	offsetD_High = offsetD + 1500;
+	offsetA_Low = offsetA - 1500;
+	offsetB_Low = offsetB - 1500;
+	offsetC_Low = offsetC - 1500;
+	offsetD_Low = offsetD - 1500;
 }
 void Calculate_Position()
 {
@@ -457,8 +457,10 @@ void TIM2_IRQHandler()
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        ControlX_Out = (0.035 * Xerror) + (0.025 * SUMof_XError) + (0.04 * SlopeofYError);
-        ControlY_Out = (0.035 * Yerror) + (0.025 * SUMof_YError) + (0.04 * SlopeofYError);
+        ControlX_Out = (0.025 * Xerror) + (0.02 * SUMof_XError) + (0.06 * SlopeofXError);
+        ControlY_Out = (0.025 * Yerror) + (0.02 * SUMof_YError) + (0.06 * SlopeofYError);
+        //ControlX_Out = (0.08 * SlopeofXError);
+        //ControlY_Out = (0.08 * SlopeofYError);
         }
         else{
         ControlX_Out = 0;
@@ -470,11 +472,29 @@ void TIM2_IRQHandler()
         duty_cycleB = ControlY_Out + offsetB;
 
 
-        	bounds_check();
-        	set_pwm_width(2, pwm_period, duty_cycleD);
-        	set_pwm_width(1, pwm_period, duty_cycleC);
-        	set_pwm_width(4, pwm_period, duty_cycleB);
-        	set_pwm_width(3, pwm_period, duty_cycleA);
+        bounds_check();
+        set_pwm_width(2, pwm_period, duty_cycleD);
+        set_pwm_width(1, pwm_period, duty_cycleC);
+        set_pwm_width(4, pwm_period, duty_cycleB);
+        set_pwm_width(3, pwm_period, duty_cycleA);
+
+            USART1_Send('X');
+            USART1_Send(':');
+            //USART1_Send(',');
+            Display_Axis((ControlX_Out*10));
+            //Display_Axis(Buffer[0]*1000);
+            USART1_Send(',');
+            USART1_Send(' ');
+            //USART1_Send('\n');
+            //USART1_Send('\r');
+            USART1_Send('Y');
+            USART1_Send(':');
+            //USART1_Send(' ');
+            Display_Axis((ControlY_Out*10));
+            //Display_Axis(Buffer[1]*1000);
+            //USART1_Send(',');
+            USART1_Send('\n');
+            USART1_Send('\r');
 
     }
 }
