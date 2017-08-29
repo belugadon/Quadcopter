@@ -52,7 +52,7 @@
 void Demo_USB (void);
 void PWMInput_Config();
 void Calibrate_RX_Inputs();
-void get_heading();
+void get_heading(float* pfData);
 void GyroConfig(void);
 void Calculate_Gyro_Drift();
 void GyroReadAngRate (float* pfData);
@@ -63,7 +63,7 @@ void TimingDelay_Decrement(void);
 void Timing_Delay(uint32_t delay);
 void USART3_Configuration();
 void GPIO_Configuration2();
-void Display_Heading(float value);
+//void Display_Heading(float value);
 
 
 

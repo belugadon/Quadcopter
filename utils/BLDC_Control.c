@@ -7,6 +7,7 @@
 #define RadToDeg                   (int)  57295
 
 float Buffer[3] = {0.0f}, AccBuffer2[3] = {0.0f};
+float HeadingValue[1] = {0.0f};
 int offsetA = 7000;
 int offsetB = 7000;
 int offsetC = 7000;
@@ -19,12 +20,14 @@ float XTotal_Rotation, YTotal_Rotation;
 float AccXangle, AccYangle;
 float chasetheX = 0.0;//positional setpoint
 float chasetheY = 0.0;//positional setpoint
+float Yaw = 0.0;
 float SUMof_XError = 0;
 float SUMof_YError = 0;
 float XLastError = 0;
 float YLastError = 0;
 float ControlX_Out = 0;
 float ControlY_Out = 0;
+float ControlZ_Out = 0;
 int pwm_period;
 int ms_pulses2;
 int prescaler2;
@@ -66,6 +69,38 @@ void schedule_PI_interrupts()
     nvicStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&nvicStructure);
 
+}
+void Display_Heading(float value)
+{
+	uint8_t dig, i;
+	float temp;
+	char message[7];
+	temp = value;
+	dig = temp*1000;
+	dig = dig %10;
+	message[0] = dig+48;
+	dig = temp*100;
+	dig = dig %10;
+	message[1] = dig+48;
+	dig = temp*10;
+	dig = dig %10;
+	message[2] = dig+48;
+	message[3] = '.';
+	dig = ((uint8_t)value % 10)+48;
+	message[4] = dig;
+	value = value/10;
+	dig = ((uint8_t)value % 10)+48;
+	message[5] = dig;
+	value = value/10;
+	dig = ((uint8_t)value % 10)+48;
+	message[6] = dig;
+	for(i=7; i != 0; i=i-1)
+	{
+		USART1_Send(message[i-1] );
+	}
+	USART1_Send(0xF8);//degrees
+    USART1_Send('\n');
+    USART1_Send('\r');
 }
 void Display_Axis(int value)
 {
@@ -134,16 +169,17 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*9;
-	chasetheX = (*roll + (0 - *pitch))*9;
+	chasetheY = (*roll + *pitch)*130;
+	chasetheX = (*roll + (0 - *pitch))*130;
 	offsetA = 6900 + *value;
 	offsetB = 6900 + *value;
 	offsetC = 6900 + *value;
 	offsetD = 6900 + *value;
-	offsetA = offsetA + *yaw/2;
-	offsetB = offsetB - *yaw/2;
-	offsetC = offsetC + *yaw/2;
-	offsetD = offsetD - *yaw/2;
+	Yaw = (float)*yaw;
+	//offsetA = offsetA + *yaw/2;
+	//offsetB = offsetB - *yaw/2;
+	//offsetC = offsetC + *yaw/2;
+	//offsetD = offsetD - *yaw/2;
 	offsetA_High = offsetA + 1500;
 	offsetB_High = offsetB + 1500;
 	offsetC_High = offsetC + 1500;
@@ -162,8 +198,12 @@ void Calculate_Position()
     AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
     AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
 
-    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/10;
-    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 59)/10;
+    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50);
+    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 59);
+    get_heading(HeadingValue);
+    Display_Axis((int *)(HeadingValue));
+    USART1_Send('\n');
+    USART1_Send('\r');
 /*    USART1_Send('X');
     USART1_Send(':');
     //USART1_Send(',');
@@ -421,15 +461,18 @@ void TIM2_IRQHandler()
     {
     	float Xerror = 0;
     	float Yerror = 0;
+    	float Zerror = 0;
     	float SlopeofXError = 0.0;
     	float SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         init_pwm();
 
         if (offsetA >= 8000){
+
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
+        Zerror = Yaw - HeadingValue[0];
 
         //The integral(I) component is created by multiplying the error by the period
         //and summing each individual periods error
@@ -457,19 +500,33 @@ void TIM2_IRQHandler()
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
-        ControlX_Out = (0.025 * Xerror) + (0.02 * SUMof_XError) + (0.06 * SlopeofXError);
-        ControlY_Out = (0.025 * Yerror) + (0.02 * SUMof_YError) + (0.06 * SlopeofYError);
-        //ControlX_Out = (0.08 * SlopeofXError);
-        //ControlY_Out = (0.08 * SlopeofYError);
+        if ((Xerror > 2.0) || (Xerror < -2.0)){
+        ControlX_Out = (0.004 * Xerror);
+        } else {
+        	ControlX_Out = 0;
+        }
+        ControlX_Out = ControlX_Out + (0.0006 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (0.0002 * SlopeofXError);
+        if ((Yerror > 2.0) || (Yerror < -2.0)){
+        ControlY_Out = (0.004 * Yerror);
+        } else {
+        	ControlY_Out = 0;
+        }
+        ControlY_Out = ControlY_Out + (0.0006 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (0.0002 * SlopeofYError);
+
         }
         else{
         ControlX_Out = 0;
         ControlY_Out = 0;
+        ControlZ_Out = 0;
         }
-        duty_cycleC = 0 - (ControlX_Out) + offsetC;
-        duty_cycleA = ControlX_Out + offsetA;
-        duty_cycleD = 0 - (ControlY_Out) + offsetD;
-        duty_cycleB = ControlY_Out + offsetB;
+
+        ControlZ_Out = (0.0006 - Zerror);
+        duty_cycleC = 0 - (ControlX_Out) + offsetC - ControlZ_Out;
+        duty_cycleA = ControlX_Out + offsetA - ControlZ_Out;
+        duty_cycleD = 0 - (ControlY_Out) + offsetD + ControlZ_Out;
+        duty_cycleB = ControlY_Out + offsetB + ControlZ_Out;
 
 
         bounds_check();
@@ -478,7 +535,7 @@ void TIM2_IRQHandler()
         set_pwm_width(4, pwm_period, duty_cycleB);
         set_pwm_width(3, pwm_period, duty_cycleA);
 
-            USART1_Send('X');
+  /*          USART1_Send('X');
             USART1_Send(':');
             //USART1_Send(',');
             Display_Axis((ControlX_Out*10));
@@ -494,7 +551,7 @@ void TIM2_IRQHandler()
             //Display_Axis(Buffer[1]*1000);
             //USART1_Send(',');
             USART1_Send('\n');
-            USART1_Send('\r');
+            USART1_Send('\r');*/
 
     }
 }

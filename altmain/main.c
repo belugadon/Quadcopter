@@ -55,7 +55,7 @@
   RCC_ClocksTypeDef RCC_Clocks;
 __IO uint32_t TimingDelay = 0;
 __IO uint32_t UserButtonPressed = 0;
-__IO float HeadingValue = 0.0f;  
+
 float MagBuffer[3] = {0.0f}, AccBuffer[3] = {0.0f}, Buff[3] = {0.0f};
 int offset;
 int IN_CH1 = 0;
@@ -64,6 +64,7 @@ int IN_CH3 = 0;
 int IN_CH4 = 0;
 float pitch = 0;
 float roll = 0;
+float Initial_Heading[1] = {0.0f};
 int IN_CH1_OFFSET = 0;
 int IN_CH2_OFFSET = 0;
 int IN_CH3_OFFSET = 0;
@@ -107,12 +108,15 @@ int main(void)
 	Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 	Calibrate_RX_Inputs();
 	Calculate_Gyro_Drift();
+	get_heading(Initial_Heading);
 	schedule_PI_interrupts();
 	while(1)
 	{
 
 		Get_Control_Channels();
-		//get_heading();
+		//get_heading(HeadingValue);
+		//Display_Heading(HeadingValue);
+		IN_CH4 = IN_CH4 + *Initial_Heading;
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 		//Adjust_Yaw(&IN_CH4);
 	    Calculate_Position();
@@ -323,16 +327,17 @@ void Get_Control_Channels()
 	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
 	IN_CH3 = TIM8->CCR2;
 	IN_CH3 = (IN_CH3 - 9161);
-	IN_CH3 = IN_CH3 * 3;
+	IN_CH3 = IN_CH3 * 4;
 	}
 	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
 	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;
+	IN_CH4 = IN_CH4 / 2;
 	}
 }
 
-void get_heading()
+void get_heading(float* pfData)
 {
 	uint8_t i;
 	DataReady = 0x00;
@@ -357,8 +362,9 @@ void get_heading()
 
 	fTiltedX = MagBuffer[0]*fCosPitch+MagBuffer[2]*fSinPitch;
     fTiltedY = MagBuffer[0]*fSinRoll*fSinPitch+MagBuffer[1]*fCosRoll-MagBuffer[1]*fSinRoll*fCosPitch;
-    HeadingValue = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*RadToDeg);//*180)/PI;
-    Display_Heading(HeadingValue);
+    pfData[0] = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*RadToDeg);//*180)/PI;
+    pfData[0] = pfData[0] / 100;
+    //Display_Heading(HeadingValue);
 }
 
 /**
@@ -806,40 +812,6 @@ void Display_Pulse_Width(uint16_t value)
 	USART1_Send(' ');
 
 }
-
-void Display_Heading(float value)
-{
-	uint8_t dig, i;
-	float temp;
-	char message[7];
-	temp = value;
-	dig = temp*1000;
-	dig = dig %10;
-	message[0] = dig+48;
-	dig = temp*100;
-	dig = dig %10;
-	message[1] = dig+48;
-	dig = temp*10;
-	dig = dig %10;
-	message[2] = dig+48;
-	message[3] = '.';
-	dig = ((uint8_t)value % 10)+48;
-	message[4] = dig;
-	value = value/10;
-	dig = ((uint8_t)value % 10)+48;
-	message[5] = dig;
-	value = value/10;
-	dig = ((uint8_t)value % 10)+48;
-	message[6] = dig;
-	for(i=7; i != 0; i=i-1)
-	{
-		USART1_Send(message[i-1] );
-	}
-	USART1_Send(0xF8);//degrees
-    USART1_Send('\n');
-    USART1_Send('\r');
-}
-
 
 void USART1_IRQHandler(void)
 {
