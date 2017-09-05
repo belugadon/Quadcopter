@@ -23,6 +23,7 @@ float chasetheY = 0.0;//positional setpoint
 float Yaw = 0.0;
 float SUMof_XError = 0;
 float SUMof_YError = 0;
+float SUMof_ZError = 0;
 float XLastError = 0;
 float YLastError = 0;
 float ControlX_Out = 0;
@@ -201,9 +202,9 @@ void Calculate_Position()
     XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50);
     YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 59);
     get_heading(HeadingValue);
-    Display_Axis((int *)(HeadingValue));
-    USART1_Send('\n');
-    USART1_Send('\r');
+    //Display_Axis((int *)(HeadingValue));
+    //USART1_Send('\n');
+    //USART1_Send('\r');
 /*    USART1_Send('X');
     USART1_Send(':');
     //USART1_Send(',');
@@ -505,15 +506,15 @@ void TIM2_IRQHandler()
         } else {
         	ControlX_Out = 0;
         }
-        ControlX_Out = ControlX_Out + (0.0006 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (0.0002 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.0005 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (0.0001 * SlopeofXError);
         if ((Yerror > 2.0) || (Yerror < -2.0)){
         ControlY_Out = (0.004 * Yerror);
         } else {
         	ControlY_Out = 0;
         }
-        ControlY_Out = ControlY_Out + (0.0006 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (0.0002 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.0005 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (0.0001 * SlopeofYError);
 
         }
         else{
@@ -522,7 +523,9 @@ void TIM2_IRQHandler()
         ControlZ_Out = 0;
         }
 
-        ControlZ_Out = (0.0006 - Zerror);
+
+        SUMof_ZError = SUMof_ZError + Zerror;
+        ControlZ_Out = (0.001 * Zerror) + (0.001 * SUMof_ZError);
         duty_cycleC = 0 - (ControlX_Out) + offsetC - ControlZ_Out;
         duty_cycleA = ControlX_Out + offsetA - ControlZ_Out;
         duty_cycleD = 0 - (ControlY_Out) + offsetD + ControlZ_Out;
@@ -546,12 +549,12 @@ void TIM2_IRQHandler()
             //USART1_Send('\r');
             USART1_Send('Y');
             USART1_Send(':');
-            //USART1_Send(' ');
-            Display_Axis((ControlY_Out*10));
-            //Display_Axis(Buffer[1]*1000);
+            //USART1_Send(' ');*/
+            //Display_Axis(Zerror);
+            Display_Axis(HeadingValue[0] * 100);
             //USART1_Send(',');
             USART1_Send('\n');
-            USART1_Send('\r');*/
+            USART1_Send('\r');
 
     }
 }

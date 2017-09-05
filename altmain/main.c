@@ -109,6 +109,8 @@ int main(void)
 	Calibrate_RX_Inputs();
 	Calculate_Gyro_Drift();
 	get_heading(Initial_Heading);
+	get_heading(Initial_Heading);
+	get_heading(Initial_Heading);
 	schedule_PI_interrupts();
 	while(1)
 	{
@@ -327,13 +329,13 @@ void Get_Control_Channels()
 	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
 	IN_CH3 = TIM8->CCR2;
 	IN_CH3 = (IN_CH3 - 9161);
-	IN_CH3 = IN_CH3 * 4;
+	IN_CH3 = IN_CH3 * 6;
 	}
 	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
 	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;
-	IN_CH4 = IN_CH4 / 2;
+	IN_CH4 = IN_CH4;// / 2;
 	}
 }
 
@@ -363,6 +365,7 @@ void get_heading(float* pfData)
 	fTiltedX = MagBuffer[0]*fCosPitch+MagBuffer[2]*fSinPitch;
     fTiltedY = MagBuffer[0]*fSinRoll*fSinPitch+MagBuffer[1]*fCosRoll-MagBuffer[1]*fSinRoll*fCosPitch;
     pfData[0] = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*RadToDeg);//*180)/PI;
+    pfData[0] = pfData[0] + 180.0;
     pfData[0] = pfData[0] / 100;
     //Display_Heading(HeadingValue);
 }
