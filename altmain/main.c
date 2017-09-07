@@ -39,6 +39,7 @@
 #include "stm32f3_discovery_lsm303dlhc.h"
 #include "stm32f3_discovery.h "
 
+
 #define ABS(x)         (x < 0) ? (-x) : x
 #define RadToDeg                   (uint32_t)  57295
 

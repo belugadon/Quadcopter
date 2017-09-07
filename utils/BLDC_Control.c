@@ -1,13 +1,15 @@
 #include "BLDC_Control.h"
 #include "math.h"
 #include "KalmanFilter.h"
-
+#include "usb_lib.h"
 
 #define ABS(x)         (x < 0) ? (-x) : x
 #define RadToDeg                   (int)  57295
 
 float Buffer[3] = {0.0f}, AccBuffer2[3] = {0.0f};
 float HeadingValue[1] = {0.0f};
+float LastHeadingValue[1] = {1800.0f};
+uint8_t Crossed = 1;
 int offsetA = 7000;
 int offsetB = 7000;
 int offsetC = 7000;
@@ -170,8 +172,8 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*120;
-	chasetheX = (*roll + (0 - *pitch))*120;
+	chasetheY = (*roll + *pitch)*100;
+	chasetheX = (*roll + (0 - *pitch))*100;
 	offsetA = 6900 + *value;
 	offsetB = 6900 + *value;
 	offsetC = 6900 + *value;
@@ -466,15 +468,33 @@ void TIM2_IRQHandler()
     	float SlopeofXError = 0.0;
     	float SlopeofYError = 0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
-        init_pwm();
+        //init_pwm();
 
         if (offsetA >= 8000){
 
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
-        Zerror = Yaw - HeadingValue[0];
+        if ((LastHeadingValue[0] - HeadingValue[0]) > 2000){
+        	Crossed--;
+        	if(Crossed < 0){
+        		Crossed = 0;
+        	}
 
+        } else if ((LastHeadingValue[0] - HeadingValue[0]) < -2000){
+        	Crossed++;
+        	if(Crossed > 2){
+        		Crossed = 2;
+        	}
+        }
+
+        switch (Crossed){
+        	case 0: Zerror = (Yaw - 3600) + (0 - HeadingValue[0]); break;
+        	case 1: Zerror = Yaw - HeadingValue[0]; break;
+        	case 2: Zerror = Yaw + (3600 - HeadingValue[0]); break;
+        }
+        //Zerror = Yaw - HeadingValue[0];
+        LastHeadingValue[0] = HeadingValue[0];
         //The integral(I) component is created by multiplying the error by the period
         //and summing each individual periods error
         if (((duty_cycleA >= offsetA_High) || (duty_cycleC >= offsetC_High)) || ((duty_cycleA <= offsetA_Low) || (duty_cycleC <= offsetC_Low)))
@@ -502,24 +522,27 @@ void TIM2_IRQHandler()
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (0.002 * Xerror);
+        ControlX_Out = (0.004 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.0007 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (0.00035 * SlopeofXError);
+        //ControlX_Out = ControlX_Out + (0.0007 * SUMof_XError);
+        //ControlX_Out = ControlX_Out + (0.00035 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (0.002 * Yerror);
+        ControlY_Out = (0.004 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.0007 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (0.00035 * SlopeofYError);
+        //ControlY_Out = ControlY_Out + (0.0007 * SUMof_YError);
+        //ControlY_Out = ControlY_Out + (0.00035 * SlopeofYError);
 
         SUMof_ZError = SUMof_ZError + Zerror;
-        ControlZ_Out = (0.15 * Zerror) + (0.07 * SUMof_ZError);
+        ControlZ_Out = (0.8 * Zerror) + (0.03 * SUMof_ZError);
         }
         else{
+        SUMof_XError = 0;
+        SUMof_YError = 0;
+        SUMof_ZError = 0;
         ControlX_Out = 0;
         ControlY_Out = 0;
         ControlZ_Out = 0;
@@ -550,11 +573,11 @@ void TIM2_IRQHandler()
             USART1_Send('Y');
             USART1_Send(':');
             //USART1_Send(' ');*/
-            Display_Axis(ControlZ_Out);
+            //Display_Axis(Zerror);
             //Display_Axis(HeadingValue[0] * 100);
             //USART1_Send(',');
-            USART1_Send('\n');
-            USART1_Send('\r');
+            //USART1_Send('\n');
+            //USART1_Send('\r');
 
     }
 }
