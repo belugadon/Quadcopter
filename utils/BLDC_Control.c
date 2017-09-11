@@ -172,8 +172,8 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*100;
-	chasetheX = (*roll + (0 - *pitch))*100;
+	chasetheY = (*roll + *pitch)*120;
+	chasetheX = (*roll + (0 - *pitch))*120;
 	offsetA = 6900 + *value;
 	offsetB = 6900 + *value;
 	offsetC = 6900 + *value;
@@ -466,7 +466,7 @@ void TIM2_IRQHandler()
     	float Yerror = 0;
     	float Zerror = 0;
     	float SlopeofXError = 0.0;
-    	float SlopeofYError = 0;
+    	float SlopeofYError = 0.0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         //init_pwm();
 
@@ -513,31 +513,35 @@ void TIM2_IRQHandler()
         }
 
         //Derivative(D) Component
-        SlopeofXError = (Xerror - XLastError);
-        XLastError = Xerror;
-        SlopeofYError = (Yerror - YLastError);
-        YLastError = Yerror;
+        SlopeofXError = (XTotal_Rotation - XLastError);
+        XLastError = XTotal_Rotation;
+        SlopeofYError = (YTotal_Rotation - YLastError);
+        YLastError = YTotal_Rotation;
+        //SlopeofXError = (Xerror - XLastError);
+        //XLastError = Xerror;
+        //SlopeofYError = (Yerror - YLastError);
+        //YLastError = Yerror;
 
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (0.004 * Xerror);
+        ControlX_Out = (0.003 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        //ControlX_Out = ControlX_Out + (0.0007 * SUMof_XError);
-        //ControlX_Out = ControlX_Out + (0.00035 * SlopeofXError);
+        //ControlX_Out = ControlX_Out + (0.0025 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (0.0016 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (0.004 * Yerror);
+        ControlY_Out = (0.003 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        //ControlY_Out = ControlY_Out + (0.0007 * SUMof_YError);
-        //ControlY_Out = ControlY_Out + (0.00035 * SlopeofYError);
+        //ControlY_Out = ControlY_Out + (0.0025 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (0.0016 * SlopeofYError);
 
         SUMof_ZError = SUMof_ZError + Zerror;
-        ControlZ_Out = (0.8 * Zerror) + (0.03 * SUMof_ZError);
+        ControlZ_Out = (1.1 * Zerror) + (0.02 * SUMof_ZError);
         }
         else{
         SUMof_XError = 0;
@@ -555,7 +559,7 @@ void TIM2_IRQHandler()
         duty_cycleB = ControlY_Out + offsetB + ControlZ_Out;
 
 
-        bounds_check();
+        //bounds_check();
         set_pwm_width(2, pwm_period, duty_cycleD);
         set_pwm_width(1, pwm_period, duty_cycleC);
         set_pwm_width(4, pwm_period, duty_cycleB);
