@@ -119,7 +119,7 @@ int main(void)
 		Get_Control_Channels();
 		//get_heading(HeadingValue);
 		//Display_Heading(HeadingValue);
-		IN_CH4 = (0 - IN_CH4) + *Initial_Heading;
+		IN_CH4 = IN_CH4 + *Initial_Heading;
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 		//Adjust_Yaw(&IN_CH4);
 	    Calculate_Position();
@@ -336,7 +336,7 @@ void Get_Control_Channels()
 	{
 	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
 	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;
-	IN_CH4 = IN_CH4 / 2;
+	IN_CH4 = IN_CH4 / 50;
 	}
 }
 
@@ -367,7 +367,7 @@ void get_heading(float* pfData)
     fTiltedY = MagBuffer[0]*fSinRoll*fSinPitch+MagBuffer[1]*fCosRoll-MagBuffer[1]*fSinRoll*fCosPitch;
     pfData[0] = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*RadToDeg);//*180)/PI;
     pfData[0] = pfData[0] + 180000.0;
-    pfData[0] = pfData[0] / 100;
+    pfData[0] = pfData[0] / 1000;
     //Display_Heading(HeadingValue);
 }
 

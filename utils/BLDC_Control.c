@@ -467,6 +467,7 @@ void TIM2_IRQHandler()
     	float Zerror = 0;
     	float SlopeofXError = 0.0;
     	float SlopeofYError = 0.0;
+    	float SlopeofZError = 0.0;
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         //init_pwm();
 
@@ -475,6 +476,7 @@ void TIM2_IRQHandler()
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
+        SlopeofZError = HeadingValue[0] - LastHeadingValue[0];
         if ((LastHeadingValue[0] - HeadingValue[0]) > 2000){
         	Crossed--;
         	if(Crossed < 0){
@@ -489,9 +491,9 @@ void TIM2_IRQHandler()
         }
 
         switch (Crossed){
-        	case 0: Zerror = (Yaw - 3600) + (0 - HeadingValue[0]); break;
-        	case 1: Zerror = Yaw - HeadingValue[0]; break;
-        	case 2: Zerror = Yaw + (3600 - HeadingValue[0]); break;
+        	case 0: Zerror = (Yaw - 3600) + (int)(0 - HeadingValue[0]); break;
+        	case 1: Zerror = Yaw - (int)HeadingValue[0]; break;
+        	case 2: Zerror = Yaw + (3600 - (int)HeadingValue[0]); break;
         }
         //Zerror = Yaw - HeadingValue[0];
         LastHeadingValue[0] = HeadingValue[0];
@@ -526,22 +528,23 @@ void TIM2_IRQHandler()
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (0.003 * Xerror);
+        ControlX_Out = (0.0022 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        //ControlX_Out = ControlX_Out + (0.0025 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (0.0016 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.0005 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (0.0017 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (0.003 * Yerror);
+        ControlY_Out = (0.0022 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        //ControlY_Out = ControlY_Out + (0.0025 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (0.0016 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.0005 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (0.0017 * SlopeofYError);
+
 
         SUMof_ZError = SUMof_ZError + Zerror;
-        ControlZ_Out = (1.1 * Zerror) + (0.02 * SUMof_ZError);
+        ControlZ_Out = (5 * Zerror) + (SUMof_ZError) + (SlopeofZError);
         }
         else{
         SUMof_XError = 0;
@@ -577,11 +580,11 @@ void TIM2_IRQHandler()
             USART1_Send('Y');
             USART1_Send(':');
             //USART1_Send(' ');*/
-            //Display_Axis(Zerror);
+            Display_Axis(Zerror);
             //Display_Axis(HeadingValue[0] * 100);
             //USART1_Send(',');
-            //USART1_Send('\n');
-            //USART1_Send('\r');
+            USART1_Send('\n');
+            USART1_Send('\r');
 
     }
 }
