@@ -532,19 +532,23 @@ void TIM2_IRQHandler()
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.0005 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (0.0017 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.00013 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (0.0018 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
         ControlY_Out = (0.0022 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.0005 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (0.0017 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.00013 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (0.0018 * SlopeofYError);
 
-
+        if (SUMof_ZError <= (5 * Zerror)){
         SUMof_ZError = SUMof_ZError + Zerror;
-        ControlZ_Out = (5 * Zerror) + (SUMof_ZError) + (SlopeofZError);
+        } else {
+        	SUMof_ZError = SUMof_ZError;
+        }
+        ControlZ_Out = (18 * Zerror) + (SUMof_ZError) + (8 * SlopeofZError);
+        //ControlZ_Out = 0;
         }
         else{
         SUMof_XError = 0;
@@ -580,11 +584,11 @@ void TIM2_IRQHandler()
             USART1_Send('Y');
             USART1_Send(':');
             //USART1_Send(' ');*/
-            Display_Axis(Zerror);
+            //Display_Axis(Zerror);
             //Display_Axis(HeadingValue[0] * 100);
             //USART1_Send(',');
-            USART1_Send('\n');
-            USART1_Send('\r');
+            //USART1_Send('\n');
+            //USART1_Send('\r');
 
     }
 }
