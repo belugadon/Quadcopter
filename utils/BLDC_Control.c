@@ -172,8 +172,8 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)*120;
-	chasetheX = (*roll + (0 - *pitch))*120;
+	chasetheY = (*roll + *pitch);//*10;
+	chasetheX = (*roll + (0 - *pitch));//*10;
 	offsetA = 6900 + *value;
 	offsetB = 6900 + *value;
 	offsetC = 6900 + *value;
@@ -201,8 +201,8 @@ void Calculate_Position()
     AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
     AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
 
-    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50);
-    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 59);
+    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/100;
+    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 50)/100;
     get_heading(HeadingValue);
     //Display_Axis((int *)(HeadingValue));
     //USART1_Send('\n');
@@ -528,26 +528,26 @@ void TIM2_IRQHandler()
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (0.0022 * Xerror);
+        ControlX_Out = (0.25 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.00013 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (0.0018 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.012 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (0.17 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (0.0022 * Yerror);
+        ControlY_Out = (0.25 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.00013 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (0.0018 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.012 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (0.17 * SlopeofYError);
 
-        if (SUMof_ZError <= (5 * Zerror)){
+        if (SUMof_ZError <= (10 * Zerror)){
         SUMof_ZError = SUMof_ZError + Zerror;
         } else {
         	SUMof_ZError = SUMof_ZError;
         }
-        ControlZ_Out = (18 * Zerror) + (SUMof_ZError) + (8 * SlopeofZError);
+        ControlZ_Out = (140 * Zerror) + (5 * SUMof_ZError) + (60 * SlopeofZError);
         //ControlZ_Out = 0;
         }
         else{
@@ -584,11 +584,11 @@ void TIM2_IRQHandler()
             USART1_Send('Y');
             USART1_Send(':');
             //USART1_Send(' ');*/
-            //Display_Axis(Zerror);
+            Display_Axis(ControlZ_Out);
             //Display_Axis(HeadingValue[0] * 100);
             //USART1_Send(',');
-            //USART1_Send('\n');
-            //USART1_Send('\r');
+            USART1_Send('\n');
+            USART1_Send('\r');
 
     }
 }

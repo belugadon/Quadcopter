@@ -317,7 +317,7 @@ void Get_Control_Channels()
 	{
 	TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
 	IN_CH1 = TIM4->CCR2 - IN_CH1_OFFSET;
-	roll = 0 - IN_CH1;
+	roll = (0 - IN_CH1);
 	}
 	if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
 	{
@@ -336,7 +336,7 @@ void Get_Control_Channels()
 	{
 	TIM_ClearITPendingBit(TIM15, TIM_IT_CC2);
 	IN_CH4 = TIM15->CCR2 - IN_CH4_OFFSET;
-	IN_CH4 = IN_CH4 / 50;
+	IN_CH4 = IN_CH4 / 100;
 	}
 }
 
@@ -367,7 +367,7 @@ void get_heading(float* pfData)
     fTiltedY = MagBuffer[0]*fSinRoll*fSinPitch+MagBuffer[1]*fCosRoll-MagBuffer[1]*fSinRoll*fCosPitch;
     pfData[0] = (float) ((atan2f((float)fTiltedY,(float)fTiltedX))*RadToDeg);//*180)/PI;
     pfData[0] = pfData[0] + 180000.0;
-    pfData[0] = pfData[0] / 1000;
+    pfData[0] = pfData[0] / 10000;
     //Display_Heading(HeadingValue);
 }
 
