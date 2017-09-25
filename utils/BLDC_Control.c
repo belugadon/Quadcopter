@@ -165,6 +165,22 @@ void Display_Axis(int value)
 		}
 	}
 }
+void USART1_Send_Int(float data)
+{
+	int value = 0;
+	char byte1 = 0;
+	char byte2 = 0;
+	value = (int)data + 180;
+	byte1 = value;
+	value = (int)value>>8;
+	byte2 = value;
+	value = (int)value>>8;
+	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET); // Wait for Empty
+	USART_SendData(USART1, byte2);
+	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET); // Wait for Empty
+	USART_SendData(USART1, byte1);
+
+}
 void cortexm4f_enable_fpu() {
     /* set CP10 and CP11 Full Access */
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));
@@ -172,8 +188,8 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch);//*10;
-	chasetheX = (*roll + (0 - *pitch));//*10;
+	chasetheY = (*roll + *pitch)/10;
+	chasetheX = (*roll + (0 - *pitch))/10;
 	offsetA = 6900 + *value;
 	offsetB = 6900 + *value;
 	offsetC = 6900 + *value;
@@ -201,8 +217,8 @@ void Calculate_Position()
     AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
     AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
 
-    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/100;
-    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 50)/100;
+    XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/1000;
+    YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 50)/1000;
     get_heading(HeadingValue);
     //Display_Axis((int *)(HeadingValue));
     //USART1_Send('\n');
@@ -528,26 +544,26 @@ void TIM2_IRQHandler()
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (0.25 * Xerror);
+        ControlX_Out = (2 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.012 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (0.17 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.16 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (3.3 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (0.25 * Yerror);
+        ControlY_Out = (2 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.012 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (0.17 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.16 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (3.3 * SlopeofYError);
 
-        if (SUMof_ZError <= (10 * Zerror)){
-        SUMof_ZError = SUMof_ZError + Zerror;
-        } else {
+        if (SUMof_ZError >= (10 * Zerror) || SUMof_ZError <= (10 * Zerror)){
         	SUMof_ZError = SUMof_ZError;
+        } else {
+        	SUMof_ZError = SUMof_ZError + Zerror;
         }
-        ControlZ_Out = (140 * Zerror) + (5 * SUMof_ZError) + (60 * SlopeofZError);
+        ControlZ_Out = (140 * Zerror) + (20 * SUMof_ZError) + (60 * SlopeofZError);
         //ControlZ_Out = 0;
         }
         else{
@@ -572,23 +588,32 @@ void TIM2_IRQHandler()
         set_pwm_width(4, pwm_period, duty_cycleB);
         set_pwm_width(3, pwm_period, duty_cycleA);
 
-  /*          USART1_Send('X');
-            USART1_Send(':');
+            //USART1_Send('X');
+            //USART1_Send(':');
             //USART1_Send(',');
-            Display_Axis((ControlX_Out*10));
+            //Display_Axis((int)XTotal_Rotation*1000);
             //Display_Axis(Buffer[0]*1000);
-            USART1_Send(',');
-            USART1_Send(' ');
+            USART1_Send('x');
+        	USART1_Send_Int((int)(XTotal_Rotation));
+            USART1_Send('-');
+            //USART1_Send(' ');
             //USART1_Send('\n');
             //USART1_Send('\r');
-            USART1_Send('Y');
-            USART1_Send(':');
-            //USART1_Send(' ');*/
-            Display_Axis(ControlZ_Out);
-            //Display_Axis(HeadingValue[0] * 100);
+            //USART1_Send('Y');
+            //USART1_Send(':');
+            //USART1_Send(' ');
+            //Display_Axis(YTotal_Rotation*1000);
+            USART1_Send('y');
+            USART1_Send_Int((int)(YTotal_Rotation));
+            USART1_Send('-');
+            USART1_Send('z');
+            USART1_Send_Int((int)(HeadingValue[0]*10));
+            USART1_Send('-');
+            //USART1_Send(' ');
+            //Display_Axis(HeadingValue[0]*100);
             //USART1_Send(',');
-            USART1_Send('\n');
-            USART1_Send('\r');
+            //USART1_Send('\n');
+            //USART1_Send('\r');
 
     }
 }

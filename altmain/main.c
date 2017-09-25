@@ -747,7 +747,7 @@ void USART1_Configuration(void)
   USART_InitTypeDef USART_InitStructure;
   NVIC_InitTypeDef NVIC_InitStructure;
 
-  USART_InitStructure.USART_BaudRate = 9600;
+  USART_InitStructure.USART_BaudRate = 19200;
   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits = USART_StopBits_1;
   USART_InitStructure.USART_Parity = USART_Parity_No;
@@ -796,6 +796,8 @@ void USART1_Send(char character)
 
     USART_SendData(USART1, character);
 }
+
+
 
 void Display_Pulse_Width(uint16_t value)
 {
