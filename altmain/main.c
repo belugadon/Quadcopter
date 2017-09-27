@@ -81,6 +81,7 @@ float fTiltedX,fTiltedY = 0.0f;
 uint8_t rx;
 float Gyro_XOffset = 0;
 float Gyro_YOffset = 0;
+float Gyro_ZOffset = 0;
 
 /**
   * @brief  Main program.
@@ -109,9 +110,9 @@ int main(void)
 	Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 	Calibrate_RX_Inputs();
 	Calculate_Gyro_Drift();
-	get_heading(Initial_Heading);
-	get_heading(Initial_Heading);
-	get_heading(Initial_Heading);
+	//get_heading(Initial_Heading);
+	//get_heading(Initial_Heading);
+	//get_heading(Initial_Heading);
 	schedule_PI_interrupts();
 	while(1)
 	{
@@ -119,7 +120,7 @@ int main(void)
 		Get_Control_Channels();
 		//get_heading(HeadingValue);
 		//Display_Heading(HeadingValue);
-		IN_CH4 = IN_CH4 + *Initial_Heading;
+		//IN_CH4 = IN_CH4 + *Initial_Heading;
 		Set_Offset(&IN_CH3, &roll, &pitch, &IN_CH4);
 		//Adjust_Yaw(&IN_CH4);
 	    Calculate_Position();
@@ -464,8 +465,10 @@ void Calculate_Gyro_Drift()
 	uint8_t i;
 	float X_SUM = 0;
 	float Y_SUM = 0;
+	float Z_SUM = 0;
 	Gyro_XOffset = 0;
 	Gyro_YOffset = 0;
+	Gyro_ZOffset = 0;
 
 	for (i=0;i<10;i++){ GyroReadAngRate(Buff); }
 
@@ -474,9 +477,11 @@ void Calculate_Gyro_Drift()
 		GyroReadAngRate(Buff);
 		X_SUM = X_SUM + Buff[0];
 		Y_SUM = Y_SUM + Buff[1];
+		Z_SUM = Z_SUM + Buff[2];
 	}
 	Gyro_XOffset = X_SUM/51;
 	Gyro_YOffset = Y_SUM/51;
+	Gyro_ZOffset = Z_SUM/51;
 }
 
 /**

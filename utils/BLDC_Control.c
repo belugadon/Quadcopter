@@ -8,7 +8,8 @@
 
 float Buffer[3] = {0.0f}, AccBuffer2[3] = {0.0f};
 float HeadingValue[1] = {0.0f};
-float LastHeadingValue[1] = {1800.0f};
+float MagBuffer2[3] = {0.0f};
+float LastHeadingValue;
 uint8_t Crossed = 1;
 int offsetA = 7000;
 int offsetB = 7000;
@@ -18,8 +19,8 @@ int offsetA_High, offsetB_High, offsetC_High, offsetD_High;
 int offsetA_Low, offsetB_Low, offsetC_Low, offsetD_Low;
 int duty_cycleC, duty_cycleB, duty_cycleA, duty_cycleD;
 int XSum_Of_Gyro, YSum_Of_Gyro;
-float XTotal_Rotation, YTotal_Rotation;
-float AccXangle, AccYangle;
+float XTotal_Rotation, YTotal_Rotation, ZTotal_Rotation;
+float AccXangle, AccYangle, AccZangle;
 float chasetheX = 0.0;//positional setpoint
 float chasetheY = 0.0;//positional setpoint
 float Yaw = 0.0;
@@ -213,13 +214,16 @@ void Calculate_Position()
     GyroReadAngRate(Buffer);//read the angular rate from the gyroscope and store in Buffer[]
 
     CompassReadAcc(AccBuffer2);
+    //CompassReadMag(MagBuffer2);
 
     AccYangle = ((atan2f((float)AccBuffer2[1],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
     AccXangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[2]))*RadToDeg);//*180)/PI;
+    //AccZangle = ((atan2f((float)AccBuffer2[0],(float)AccBuffer2[1]))*RadToDeg);//*180)/PI;
 
     XTotal_Rotation = kalmanFilterX(AccXangle, Buffer[0], 50)/1000;
     YTotal_Rotation = kalmanFilterY(AccYangle, Buffer[1], 50)/1000;
-    get_heading(HeadingValue);
+    ZTotal_Rotation = ZTotal_Rotation + Buffer[2]/333;//kalmanFilterY(AccZangle, Buffer[2], 50)/1000;
+    //get_heading(HeadingValue);
     //Display_Axis((int *)(HeadingValue));
     //USART1_Send('\n');
     //USART1_Send('\r');
@@ -492,27 +496,9 @@ void TIM2_IRQHandler()
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
-        SlopeofZError = HeadingValue[0] - LastHeadingValue[0];
-        if ((LastHeadingValue[0] - HeadingValue[0]) > 2000){
-        	Crossed--;
-        	if(Crossed < 0){
-        		Crossed = 0;
-        	}
-
-        } else if ((LastHeadingValue[0] - HeadingValue[0]) < -2000){
-        	Crossed++;
-        	if(Crossed > 2){
-        		Crossed = 2;
-        	}
-        }
-
-        switch (Crossed){
-        	case 0: Zerror = (Yaw - 3600) + (int)(0 - HeadingValue[0]); break;
-        	case 1: Zerror = Yaw - (int)HeadingValue[0]; break;
-        	case 2: Zerror = Yaw + (3600 - (int)HeadingValue[0]); break;
-        }
-        //Zerror = Yaw - HeadingValue[0];
-        LastHeadingValue[0] = HeadingValue[0];
+        SlopeofZError = ZTotal_Rotation - LastHeadingValue;
+        Zerror = Yaw + ZTotal_Rotation;
+        LastHeadingValue = ZTotal_Rotation;
         //The integral(I) component is created by multiplying the error by the period
         //and summing each individual periods error
         if (((duty_cycleA >= offsetA_High) || (duty_cycleC >= offsetC_High)) || ((duty_cycleA <= offsetA_Low) || (duty_cycleC <= offsetC_Low)))
@@ -544,26 +530,26 @@ void TIM2_IRQHandler()
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (2 * Xerror);
+        ControlX_Out = (2.5 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.16 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (3.3 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.08 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (1 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (2 * Yerror);
+        ControlY_Out = (2.5 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.16 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (3.3 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.08 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (1 * SlopeofYError);
 
         if (SUMof_ZError >= (10 * Zerror) || SUMof_ZError <= (10 * Zerror)){
         	SUMof_ZError = SUMof_ZError;
         } else {
         	SUMof_ZError = SUMof_ZError + Zerror;
         }
-        ControlZ_Out = (140 * Zerror) + (20 * SUMof_ZError) + (60 * SlopeofZError);
+        ControlZ_Out = (17 * Zerror) + (5 * SUMof_ZError);// + (1 * SlopeofZError);
         //ControlZ_Out = 0;
         }
         else{
@@ -588,32 +574,30 @@ void TIM2_IRQHandler()
         set_pwm_width(4, pwm_period, duty_cycleB);
         set_pwm_width(3, pwm_period, duty_cycleA);
 
-            //USART1_Send('X');
-            //USART1_Send(':');
-            //USART1_Send(',');
-            //Display_Axis((int)XTotal_Rotation*1000);
-            //Display_Axis(Buffer[0]*1000);
-            USART1_Send('x');
+ /*
+            USART1_Send('X');
+            USART1_Send(':');
+            USART1_Send(' ');
+            Display_Axis(AccXangle);
+            USART1_Send('Y');
+            USART1_Send(':');
+            USART1_Send(' ');
+            Display_Axis(AccYangle);
+            USART1_Send('z');
+            USART1_Send(':');
+            USART1_Send(' ');
+            Display_Axis(ZTotal_Rotation);
+            USART1_Send('\n');
+            USART1_Send('\r');
+*/
+           USART1_Send('x');
         	USART1_Send_Int((int)(XTotal_Rotation));
             USART1_Send('-');
-            //USART1_Send(' ');
-            //USART1_Send('\n');
-            //USART1_Send('\r');
-            //USART1_Send('Y');
-            //USART1_Send(':');
-            //USART1_Send(' ');
-            //Display_Axis(YTotal_Rotation*1000);
             USART1_Send('y');
             USART1_Send_Int((int)(YTotal_Rotation));
             USART1_Send('-');
             USART1_Send('z');
-            USART1_Send_Int((int)(HeadingValue[0]*10));
+            USART1_Send_Int((int)(ZTotal_Rotation));
             USART1_Send('-');
-            //USART1_Send(' ');
-            //Display_Axis(HeadingValue[0]*100);
-            //USART1_Send(',');
-            //USART1_Send('\n');
-            //USART1_Send('\r');
-
     }
 }
