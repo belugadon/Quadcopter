@@ -189,8 +189,8 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch)/10;
-	chasetheX = (*roll + (0 - *pitch))/10;
+	chasetheY = (*roll + *pitch);
+	chasetheX = (*roll + (0 - *pitch));
 	offsetA = 6900 + *value;
 	offsetB = 6900 + *value;
 	offsetC = 6900 + *value;
@@ -496,60 +496,57 @@ void TIM2_IRQHandler()
         //the difference between the current displacement and the setpoint is the error and P component
         Xerror = chasetheX - XTotal_Rotation;
         Yerror = chasetheY - YTotal_Rotation;
-        SlopeofZError = ZTotal_Rotation - LastHeadingValue;
         Zerror = Yaw + ZTotal_Rotation;
-        LastHeadingValue = ZTotal_Rotation;
+
         //The integral(I) component is created by multiplying the error by the period
         //and summing each individual periods error
-        if (((duty_cycleA >= offsetA_High) || (duty_cycleC >= offsetC_High)) || ((duty_cycleA <= offsetA_Low) || (duty_cycleC <= offsetC_Low)))
-        {
-        	SUMof_XError = SUMof_XError;
-        }
-        else {
+//        if (((duty_cycleA >= offsetA_High) || (duty_cycleC >= offsetC_High)) || ((duty_cycleA <= offsetA_Low) || (duty_cycleC <= offsetC_Low)))
+//        {
+//        	SUMof_XError = SUMof_XError;
+//        }
+//        else {
         SUMof_XError = SUMof_XError + Xerror;
-        }
-        if (((duty_cycleB >= offsetB_High) || (duty_cycleD >= offsetD_High))|| ((duty_cycleB <= offsetB_Low) || (duty_cycleD <= offsetD_Low)))
-        {
-        	SUMof_YError = SUMof_YError;
-        }
-        else {
+//        }
+//        if (((duty_cycleB >= offsetB_High) || (duty_cycleD >= offsetD_High))|| ((duty_cycleB <= offsetB_Low) || (duty_cycleD <= offsetD_Low)))
+//        {
+//        	SUMof_YError = SUMof_YError;
+//        }
+//        else {
         	SUMof_YError = SUMof_YError + Yerror;
-        }
+//        }
 
         //Derivative(D) Component
         SlopeofXError = (XTotal_Rotation - XLastError);
         XLastError = XTotal_Rotation;
         SlopeofYError = (YTotal_Rotation - YLastError);
         YLastError = YTotal_Rotation;
-        //SlopeofXError = (Xerror - XLastError);
-        //XLastError = Xerror;
-        //SlopeofYError = (Yerror - YLastError);
-        //YLastError = Yerror;
+        SlopeofZError = ZTotal_Rotation - LastHeadingValue;
+        LastHeadingValue = ZTotal_Rotation;
 
 
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (2.5 * Xerror);
+        ControlX_Out = (2 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.08 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (1 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.25 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (2 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (2.5 * Yerror);
+        ControlY_Out = (2 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.08 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (1 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.25 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (2 * SlopeofYError);
 
         if (SUMof_ZError >= (10 * Zerror) || SUMof_ZError <= (10 * Zerror)){
         	SUMof_ZError = SUMof_ZError;
         } else {
         	SUMof_ZError = SUMof_ZError + Zerror;
         }
-        ControlZ_Out = (17 * Zerror) + (5 * SUMof_ZError);// + (1 * SlopeofZError);
+        ControlZ_Out = (19 * Zerror) + (6 * SUMof_ZError);// + (1 * SlopeofZError);
         //ControlZ_Out = 0;
         }
         else{
