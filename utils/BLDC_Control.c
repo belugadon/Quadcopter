@@ -189,12 +189,12 @@ void cortexm4f_enable_fpu() {
 
 void Set_Offset(int* value, float* roll, float* pitch, int* yaw)
 {
-	chasetheY = (*roll + *pitch);
-	chasetheX = (*roll + (0 - *pitch));
-	offsetA = 6900 + *value;
-	offsetB = 6900 + *value;
-	offsetC = 6900 + *value;
-	offsetD = 6900 + *value;
+	//chasetheY = (*roll + *pitch);
+	//chasetheX = (*roll + (0 - *pitch));
+	offsetA = 6900 + *value + *roll - *pitch;
+	offsetB = 6900 + *value + *roll + *pitch;
+	offsetC = 6900 + *value - *roll + *pitch;
+	offsetD = 6900 + *value - *roll - *pitch;
 	Yaw = (float)*yaw;
 	//offsetA = offsetA + *yaw/2;
 	//offsetB = offsetB - *yaw/2;
@@ -527,26 +527,26 @@ void TIM2_IRQHandler()
         //We can now assemble the control output by multiplying each control component by it's associated
         //gain coefficient and summing the results
         //if ((Xerror > 2.0) || (Xerror < -2.0)){
-        ControlX_Out = (2 * Xerror);
+        ControlX_Out = (1.7 * Xerror);
         //} else {
         //	ControlX_Out = 0;
         //}
-        ControlX_Out = ControlX_Out + (0.25 * SUMof_XError);
-        ControlX_Out = ControlX_Out + (2 * SlopeofXError);
+        ControlX_Out = ControlX_Out + (0.18 * SUMof_XError);
+        ControlX_Out = ControlX_Out + (2.6 * SlopeofXError);
         //if ((Yerror > 2.0) || (Yerror < -2.0)){
-        ControlY_Out = (2 * Yerror);
+        ControlY_Out = (1.7 * Yerror);
         //} else {
         //	ControlY_Out = 0;
         //}
-        ControlY_Out = ControlY_Out + (0.25 * SUMof_YError);
-        ControlY_Out = ControlY_Out + (2 * SlopeofYError);
+        ControlY_Out = ControlY_Out + (0.18 * SUMof_YError);
+        ControlY_Out = ControlY_Out + (2.6 * SlopeofYError);
 
         if (SUMof_ZError >= (10 * Zerror) || SUMof_ZError <= (10 * Zerror)){
         	SUMof_ZError = SUMof_ZError;
         } else {
         	SUMof_ZError = SUMof_ZError + Zerror;
         }
-        ControlZ_Out = (19 * Zerror) + (6 * SUMof_ZError);// + (1 * SlopeofZError);
+        ControlZ_Out = (19 * Zerror) + (7 * SUMof_ZError);// + (1 * SlopeofZError);
         //ControlZ_Out = 0;
         }
         else{

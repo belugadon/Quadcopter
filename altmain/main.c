@@ -318,20 +318,20 @@ void Get_Control_Channels()
 	{
 	TIM_ClearITPendingBit(TIM4, TIM_IT_CC2);
 	IN_CH1 = TIM4->CCR2 - IN_CH1_OFFSET;
-	roll = (0 - (IN_CH1 / 10));
+	roll = (0 - (IN_CH1 / 4));
 	}
 	if (TIM_GetITStatus(TIM3, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
 	IN_CH2 = TIM3->CCR2 - IN_CH2_OFFSET;
-	pitch = IN_CH2 / 10;
+	pitch = IN_CH2 / 4;
 	}
 	if (TIM_GetITStatus(TIM8, TIM_IT_CC2) != RESET)
 	{
 	TIM_ClearITPendingBit(TIM8, TIM_IT_CC2);
 	IN_CH3 = TIM8->CCR2;
 	IN_CH3 = (IN_CH3 - 9161);
-	IN_CH3 = IN_CH3 * 6;
+	IN_CH3 = IN_CH3 * 4;
 	}
 	if (TIM_GetITStatus(TIM15, TIM_IT_CC2) != RESET)
 	{
